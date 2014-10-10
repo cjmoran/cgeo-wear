@@ -6,7 +6,7 @@ android {
     buildToolsVersion "20.0.0"
 
     defaultConfig {
-        applicationId "javadog.com.cgeowear"
+        applicationId "com.javadog.cgeowear"
         minSdkVersion 20
         targetSdkVersion 20
         versionCode 1

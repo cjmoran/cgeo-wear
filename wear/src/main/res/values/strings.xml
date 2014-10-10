@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">cGeo Wear</string>
-    <string name="hello_round">Hello World!</string>
-    <string name="hello_square">Hello Square World!</string>
+    <string name="app_name">c:geo Wear</string>
+
+	<string name="description_compass">Compass</string>
 
 </resources>

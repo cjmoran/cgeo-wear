@@ -1,4 +1,4 @@
-package javadog.com.cgeowear;
+package com.javadog.cgeowear;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

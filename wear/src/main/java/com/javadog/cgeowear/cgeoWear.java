@@ -1,9 +1,11 @@
-package javadog.com.cgeowear;
+package com.javadog.cgeowear;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.support.wearable.view.WatchViewStub;
 import android.widget.TextView;
+
+import javadog.com.cgeowear.R;
 
 public class cgeoWear extends Activity {
 

@@ -5,7 +5,7 @@ android {
     buildToolsVersion "20.0.0"
 
     defaultConfig {
-        applicationId "javadog.com.cgeowear"
+        applicationId "com.javadog.cgeowear"
         minSdkVersion 11
         targetSdkVersion 20
         versionCode 1
@@ -23,6 +23,5 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     wearApp project(':wear')
     compile 'com.android.support:appcompat-v7:20.0.0'
-    compile 'com.google.android.gms:play-services-wearable:+'
     compile 'com.android.support:support-v4:20.0.0'
 }
