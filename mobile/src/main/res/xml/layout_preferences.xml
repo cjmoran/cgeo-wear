@@ -3,6 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-
+	<!-- For debugging -->
+	<Preference
+		android:key="button_debug"
+		android:title="Debug"
+	    android:summary="Select to start service with debug values"/>
 
 </PreferenceScreen>

@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">c:geo Wear</string>
+
+	<string name="notification_text">Touch to stop navigating</string>
+	<string name="toast_service_started">Navigating on Android Wear</string>
 </resources>
