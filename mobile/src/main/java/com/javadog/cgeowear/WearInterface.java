@@ -3,45 +3,40 @@ package com.javadog.cgeowear;
 import android.util.Log;
 
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.MessageApi;
-import com.google.android.gms.wearable.Node;
-import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
 import java.net.ConnectException;
-import java.util.HashSet;
-import java.util.NoSuchElementException;
 
 /**
  * Contains methods used to interface with Android Wear devices.
  */
-public class WearInterface {
+public class WearInterface implements ResultCallback<MessageApi.SendMessageResult> {
 	public static final String PATH_INIT = "/cgeoWear/init";
 	public static final String PATH_UPDATE = "/cgeoWear/update";
 
 	private GoogleApiClient apiClient;
+	private String nodeId;
 
-	public WearInterface(GoogleApiClient client) {
+	/**
+	 * @param client A reference to the Google API client.
+	 * @param nId The ID of the paired Wear device to use.
+	 */
+	public WearInterface(GoogleApiClient client, String nId) {
 		apiClient = client;
-
-		//Start finding Wear devices
-		try {
-			getWearDevives();
-		} catch(ConnectException e) {
-			Log.e(WearService.DEBUG_TAG, "Couldn't search for Wear devices.");
-		}
+		nodeId = nId;
 	}
 
 	/**
 	 * Send initial command to start navigating to a cache using passed values:
 	 *
-	 * @param nodeId The ID of the paired Wear device to use.
 	 * @param cacheName The Geocache's title.
 	 * @param geocode   The Geocache's Geocode.
 	 * @param distance The distance to the geocache.
 	 * @param direction The direction to the geocache.
 	 */
-	public void initTracking(String nodeId, String cacheName, String geocode, float distance, float direction)
+	public void initTracking(String cacheName, String geocode, float distance, float direction)
 			throws ConnectException {
 		MessageDataSet dataSet = new MessageDataSet.Builder(distance, direction)
 				.cacheName(cacheName)
@@ -57,7 +52,17 @@ public class WearInterface {
 		}
 	}
 
-	private void getWearDevives() throws ConnectException {
+	public void sendLocationUpdate(float distance, float direction) {
+		MessageDataSet dataSet = new MessageDataSet.Builder(distance, direction).build();
 
+		Wearable.MessageApi.sendMessage(
+				apiClient, nodeId, PATH_UPDATE, dataSet.putToDataMap().toByteArray()).setResultCallback(this);
+	}
+
+	@Override
+	public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+		if(!sendMessageResult.getStatus().isSuccess()) {
+			Log.e(WearService.DEBUG_TAG, "Failed to send location update to Wear device.");
+		}
 	}
 }

@@ -27,8 +27,8 @@ public class SettingsActivity extends Activity {
 					Intent intent = new Intent("cgeo.geocaching.wear.NAVIGATE_TO");
 					intent.putExtra("cgeo.geocaching.wear.extra.CACHE_NAME", "Sample Geocache");
 					intent.putExtra("cgeo.geocaching.wear.extra.GEOCODE", "GC10101");
-					intent.putExtra("cgeo.geocaching.wear.extra.LATITUDE", 35.28884);
-					intent.putExtra("cgeo.geocaching.wear.extra.LONGITUDE", -80.73667);
+					intent.putExtra("cgeo.geocaching.wear.extra.LATITUDE", 35.28897);
+					intent.putExtra("cgeo.geocaching.wear.extra.LONGITUDE", -80.73699);
 					getActivity().startService(intent);
 
 					return true;
