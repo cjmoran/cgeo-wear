@@ -16,6 +16,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -62,7 +63,6 @@ public class WearService extends Service
 	private String geocode;
 	private Location geocacheLocation;
 	private Location currentLocation;
-	private float distance;
 	private float direction;
 
 	@Override
@@ -103,6 +103,10 @@ public class WearService extends Service
 		IntentFilter filter = new IntentFilter(INTENT_STOP);
 		registerReceiver(intentReceiver, filter);
 
+		//Register listener for when watch app closes
+		IntentFilter localFilter = new IntentFilter(ListenerService.PATH_KILL_APP);
+		LocalBroadcastManager.getInstance(this).registerReceiver(localReceiver, localFilter);
+
 		//Show a persistent notification
 		Intent stopServiceIntent = new Intent(INTENT_STOP);
 		PendingIntent nIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, stopServiceIntent, 0);
@@ -128,7 +132,7 @@ public class WearService extends Service
 		sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_GAME);
 
 		//Connect to Google APIs
-		apiClient = new GoogleApiClient.Builder(getApplicationContext(), this, this)
+		apiClient = new GoogleApiClient.Builder(this, this, this)
 				.addApi(Wearable.API)
 				.addApi(LocationServices.API)
 				.build();
@@ -146,7 +150,22 @@ public class WearService extends Service
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();
 			if(INTENT_STOP.equals(action)) {
-				stopApp();
+				Log.d(DEBUG_TAG, "Received 'stop' intent; stopping phone service.");
+				stopSelf();
+			}
+		}
+	};
+
+	/**
+	 * Handles broadcast originated by watch app closing; stops this service.
+	 */
+	BroadcastReceiver localReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if(ListenerService.PATH_KILL_APP.equals(action)) {
+				Log.d(DEBUG_TAG, "Watch app closed; stopping phone service.");
+				stopSelf();
 			}
 		}
 	};
@@ -159,6 +178,7 @@ public class WearService extends Service
 
 		//Stop listeners
 		unregisterReceiver(intentReceiver);
+		LocalBroadcastManager.getInstance(this).unregisterReceiver(localReceiver);
 		sensorManager.unregisterListener(this, accelerometer);
 		sensorManager.unregisterListener(this, magnetometer);
 
@@ -166,18 +186,10 @@ public class WearService extends Service
 	}
 
 	/**
-	 * Stops both this phone service and the Wear app.
-	 */
-	private void stopApp() {
-		stopWearApp();
-		stopSelf();
-	}
-
-	/**
 	 * Stops the Android Wear counterpart to this app.
 	 */
 	private void stopWearApp() {
-		//TODO: Implement
+		wearInterface.sendKillRequest();
 	}
 
 	@Override
@@ -205,7 +217,7 @@ public class WearService extends Service
 				} catch(NoSuchElementException e) {
 					//TODO: Handle this with a warning in the UI
 					Log.e(DEBUG_TAG, "No Wear devices connected. Killing service...");
-					stopApp();
+					stopSelf();
 				}
 			}
 		}).start();
@@ -228,10 +240,7 @@ public class WearService extends Service
 			currentLocation = location;
 
 			//Calculate new distance (meters) to geocache
-			distance = location.distanceTo(geocacheLocation);
-
-			//Calculate the angle to the geocache
-
+			float distance = location.distanceTo(geocacheLocation);
 
 			//Send these values off to Android Wear
 			wearInterface.sendLocationUpdate(distance, direction);

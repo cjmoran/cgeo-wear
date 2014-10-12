@@ -15,6 +15,7 @@ import java.net.ConnectException;
 public class WearInterface implements ResultCallback<MessageApi.SendMessageResult> {
 	public static final String PATH_INIT = "/cgeoWear/init";
 	public static final String PATH_UPDATE = "/cgeoWear/update";
+	public static final String PATH_KILL_APP = "/cgeoWear/killApp";
 
 	private GoogleApiClient apiClient;
 	private String nodeId;
@@ -57,6 +58,12 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 
 		Wearable.MessageApi.sendMessage(
 				apiClient, nodeId, PATH_UPDATE, dataSet.putToDataMap().toByteArray()).setResultCallback(this);
+	}
+
+	public void sendKillRequest() {
+		Wearable.MessageApi.sendMessage(
+				apiClient, nodeId, PATH_KILL_APP, new byte[0]
+		);
 	}
 
 	@Override

@@ -13,10 +13,18 @@ import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import java.text.DecimalFormat;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
+import com.google.android.gms.wearable.Wearable;
 
-public class cgeoWear extends Activity {
-	private static final String DEBUG_TAG = "com.javadog.cgeowear";
+import java.text.DecimalFormat;
+import java.util.HashSet;
+
+public class cgeoWear extends Activity
+		implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+	public static final String DEBUG_TAG = "com.javadog.cgeowear";
 
 	private TextView tv_cacheName;
 	private TextView tv_geocode;
@@ -27,6 +35,9 @@ public class cgeoWear extends Activity {
 	private float direction;
 
 	private LocalBroadcastManager broadcastManager;
+
+	private GoogleApiClient apiClient;
+	private String connectedNodeId;
 
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,8 +54,15 @@ public class cgeoWear extends Activity {
 
 		//Register BroadcastReceiver for location updates
 		broadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
-		IntentFilter updateFilter = new IntentFilter(ListenerService.PATH_UPDATE);
+		IntentFilter updateFilter = new IntentFilter();
+		updateFilter.addAction(ListenerService.PATH_UPDATE);
+		updateFilter.addAction(ListenerService.PATH_KILL_APP);
 		broadcastManager.registerReceiver(broadcastReceiver, updateFilter);
+
+		apiClient = new GoogleApiClient.Builder(this, this, this)
+				.addApi(Wearable.API)
+				.build();
+		apiClient.connect();
     }
 
 	/**
@@ -71,13 +89,22 @@ public class cgeoWear extends Activity {
 
 	/**
 	 * Handles location updates, updates UI accordingly.
+	 *
+	 * Also kills the app if requested by the phone.
 	 */
 	private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
+
+			//Location update received
 			if(ListenerService.PATH_UPDATE.equals(intent.getAction())) {
 				setDistanceFormatted(intent.getFloatExtra(MessageDataSet.KEY_DISTANCE, 0f));
 				rotateCompass(intent.getFloatExtra(MessageDataSet.KEY_DIRECTION, 0f));
+
+			//Kill app
+			} else if(ListenerService.PATH_KILL_APP.equals(intent.getAction())) {
+				Log.d(cgeoWear.DEBUG_TAG, "Phone service stopped; killing watch app.");
+				cgeoWear.this.finish();
 			}
 		}
 	};
@@ -99,18 +126,20 @@ public class cgeoWear extends Activity {
 	 * @param newDirection Direction to turn to, in degrees.
 	 */
 	private void rotateCompass(float newDirection) {
-		Log.d(DEBUG_TAG, "Rotating compass from " + direction + " to " + newDirection);
+		if(direction != newDirection) {
+			Log.d(DEBUG_TAG, "Rotating compass from " + direction + " to " + newDirection);
 
-		RotateAnimation anim = new RotateAnimation(
-				direction,
-				newDirection,
-				Animation.RELATIVE_TO_SELF, 0.5f,
-				Animation.RELATIVE_TO_SELF, 0.5f);
-		anim.setDuration(200l);
-		anim.setFillAfter(true);
-		iv_compass.startAnimation(anim);
+			RotateAnimation anim = new RotateAnimation(
+					direction,
+					newDirection,
+					Animation.RELATIVE_TO_SELF, 0.5f,
+					Animation.RELATIVE_TO_SELF, 0.5f);
+			anim.setDuration(200l);
+			anim.setFillAfter(true);
+			iv_compass.startAnimation(anim);
 
-		direction = newDirection;
+			direction = newDirection;
+		}
 	}
 
 	@Override
@@ -118,6 +147,43 @@ public class cgeoWear extends Activity {
 		//Unregister our BroadcastReceiver
 		broadcastManager.unregisterReceiver(broadcastReceiver);
 
+		//Attempt to tell the phone service to stop, then disconnect from Google APIs
+		if(apiClient.isConnected() && connectedNodeId != null) {
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					Wearable.MessageApi.sendMessage(
+							apiClient, connectedNodeId, ListenerService.PATH_KILL_APP, new byte[0]).await();
+					apiClient.disconnect();
+				}
+			}).start();
+		}
+
 		super.onStop();
+	}
+
+	@Override
+	public void onConnected(Bundle bundle) {
+		//As soon as the Google APIs are connected, grab the connected Node ID
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				HashSet<String> connectedWearDevices = new HashSet<String>();
+				NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(apiClient).await();
+				for(Node node : nodes.getNodes()) {
+					connectedWearDevices.add(node.getId());
+				}
+
+				connectedNodeId = connectedWearDevices.iterator().next();
+			}
+		}).start();
+	}
+
+	@Override
+	public void onConnectionSuspended(int i) {
+	}
+
+	@Override
+	public void onConnectionFailed(ConnectionResult connectionResult) {
 	}
 }
