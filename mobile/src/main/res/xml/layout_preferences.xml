@@ -3,6 +3,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+	<CheckBoxPreference
+		android:key="pref_use_watch_compass"
+	    android:defaultValue="true"
+	    android:title="@string/pref_title_watch_compass"
+	    android:summary="@string/pref_summary_watch_compass"/>
+
 	<!-- For debugging -->
 	<Preference
 		android:key="button_debug"

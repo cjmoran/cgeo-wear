@@ -8,9 +8,9 @@
 	<uses-feature android:name="android.hardware.location"
 	              android:required="true"/>
 	<uses-feature android:name="android.hardware.sensor.accelerometer"
-	              android:required="true"/>
+	              android:required="false"/>
 	<uses-feature android:name="android.hardware.sensor.compass"
-	              android:required="true"/>
+	              android:required="false"/>
 
 	<application
 		android:allowBackup="true"

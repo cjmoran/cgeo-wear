@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.hardware.GeomagneticField;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -15,6 +16,7 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -61,10 +63,10 @@ public class WearService extends Service
 	private SensorManager sensorManager;
 	private Sensor accelerometer;
 	private Sensor magnetometer;
+	private boolean useWatchCompass;
 
 	private String cacheName;
 	private String geocode;
-	private float direction;
 	private Location geocacheLocation;
 	private Location currentLocation;
 
@@ -102,6 +104,8 @@ public class WearService extends Service
 	private void handleInit() {
 		//TODO: Ensure an Android Wear device is paired
 
+		SharedPreferences userPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+
 		//Register listener for INTENT_STOP events
 		IntentFilter filter = new IntentFilter(INTENT_STOP);
 		registerReceiver(intentReceiver, filter);
@@ -127,12 +131,15 @@ public class WearService extends Service
 				.setFastestInterval(LOCATION_UPDATE_MAX_INTERVAL)
 				.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-		//Start reading compass sensors
-		sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-		accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-		magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-		sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-		sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+		//Start reading compass sensors if using phone compass
+		useWatchCompass = userPrefs.getBoolean("pref_use_watch_compass", true);
+		if(!useWatchCompass) {
+			sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+			accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+			magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+			sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+		}
 
 		//Connect to Google APIs
 		apiClient = new GoogleApiClient.Builder(this, this, this)
@@ -182,8 +189,10 @@ public class WearService extends Service
 		//Stop listeners
 		unregisterReceiver(intentReceiver);
 		LocalBroadcastManager.getInstance(this).unregisterReceiver(localReceiver);
-		sensorManager.unregisterListener(this, accelerometer);
-		sensorManager.unregisterListener(this, magnetometer);
+		if(!useWatchCompass) {
+			sensorManager.unregisterListener(this, accelerometer);
+			sensorManager.unregisterListener(this, magnetometer);
+		}
 
 		super.onDestroy();
 	}
@@ -214,7 +223,7 @@ public class WearService extends Service
 
 				try {
 					wearInterface = new WearInterface(apiClient, connectedWearDevices.iterator().next());
-					wearInterface.initTracking(cacheName, geocode, 12.34f, 0.12f);
+					wearInterface.initTracking(cacheName, geocode, 12.34f, 0.12f, useWatchCompass, geocacheLocation);
 				} catch(ConnectException e) {
 					Log.e(DEBUG_TAG, "Couldn't send initial tracking data.");
 				} catch(NoSuchElementException e) {
@@ -242,11 +251,15 @@ public class WearService extends Service
 			//Update stored currentLocation
 			currentLocation = location;
 
-			//Calculate new distance (meters) to geocache
-			float distance = location.distanceTo(geocacheLocation);
+			if(!useWatchCompass) {
+				//Calculate new distance (meters) to geocache
+				float distance = currentLocation.distanceTo(geocacheLocation);
 
-			//Send these values off to Android Wear
-			wearInterface.sendDistanceUpdate(distance);
+				//Send these values off to Android Wear
+				wearInterface.sendDistanceUpdate(distance);
+			} else {
+				wearInterface.sendLocationUpdate(currentLocation);
+			}
 		}
 	};
 
@@ -260,7 +273,7 @@ public class WearService extends Service
 	float oldDirection = 0, oldLatitude = 0, oldLongitude = 0, oldAltitude = 0;
 	long prevTime = System.currentTimeMillis();
 	/**
-	 * Handles compass azimuth rotation.
+	 * Handles compass rotation.
 	 */
 	@Override
 	public void onSensorChanged(SensorEvent event) {
@@ -299,7 +312,7 @@ public class WearService extends Service
 
 					float bearing = currentLocation.bearingTo(geocacheLocation);
 
-					direction = smoothSensorValues(oldDirection, -(azimuth - bearing), 1/5f);
+					float direction = smoothSensorValues(oldDirection, -(azimuth - bearing), 1 / 5f);
 
 					//If the user puts the phone in his/her pocket upside-down, invert the compass
 					if(pitch > 0) {

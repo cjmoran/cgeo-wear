@@ -4,4 +4,7 @@
 	<string name="notification_text">Touch to stop navigating</string>
 	<string name="toast_service_started">Navigating on Android Wear</string>
 	<string name="gps_disabled_exit_message">Location disabled; stopping Android Wear navigation</string>
+
+	<string name="pref_title_watch_compass">Use Watch Compass</string>
+	<string name="pref_summary_watch_compass">Uncheck to use phone\'s compass.</string>
 </resources>
