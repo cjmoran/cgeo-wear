@@ -14,7 +14,8 @@ import java.net.ConnectException;
  */
 public class WearInterface implements ResultCallback<MessageApi.SendMessageResult> {
 	public static final String PATH_INIT = "/cgeoWear/init";
-	public static final String PATH_UPDATE = "/cgeoWear/update";
+	public static final String PATH_UPDATE_DISTANCE = "/cgeoWear/update/distance";
+	public static final String PATH_UPDATE_DIRECTION = "/cgeoWear/update/direction";
 	public static final String PATH_KILL_APP = "/cgeoWear/killApp";
 
 	private GoogleApiClient apiClient;
@@ -39,9 +40,11 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 	 */
 	public void initTracking(String cacheName, String geocode, float distance, float direction)
 			throws ConnectException {
-		MessageDataSet dataSet = new MessageDataSet.Builder(distance, direction)
+		MessageDataSet dataSet = new MessageDataSet.Builder()
 				.cacheName(cacheName)
 				.geocode(geocode)
+				.distance(distance)
+				.direction(direction)
 				.build();
 
 		MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
@@ -53,11 +56,22 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 		}
 	}
 
-	public void sendLocationUpdate(float distance, float direction) {
-		MessageDataSet dataSet = new MessageDataSet.Builder(distance, direction).build();
+	public void sendDistanceUpdate(float distance) {
+		MessageDataSet dataSet = new MessageDataSet.Builder()
+				.distance(distance)
+				.build();
 
 		Wearable.MessageApi.sendMessage(
-				apiClient, nodeId, PATH_UPDATE, dataSet.putToDataMap().toByteArray()).setResultCallback(this);
+				apiClient, nodeId, PATH_UPDATE_DISTANCE, dataSet.putToDataMap().toByteArray()).setResultCallback(this);
+	}
+
+	public void sendDirectionUpdate(float direction) {
+		MessageDataSet dataSet = new MessageDataSet.Builder()
+				.direction(direction)
+				.build();
+
+		Wearable.MessageApi.sendMessage(
+				apiClient, nodeId, PATH_UPDATE_DIRECTION, dataSet.putToDataMap().toByteArray()).setResultCallback(this);
 	}
 
 	public void sendKillRequest() {

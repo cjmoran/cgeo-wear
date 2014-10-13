@@ -2,7 +2,6 @@ package com.javadog.cgeowear;
 
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.MessageEvent;
@@ -13,7 +12,8 @@ import com.google.android.gms.wearable.WearableListenerService;
  */
 public class ListenerService extends WearableListenerService {
 	public static final String PATH_INIT = "/cgeoWear/init";
-	public static final String PATH_UPDATE = "/cgeoWear/update";
+	public static final String PATH_UPDATE_DISTANCE = "/cgeoWear/update/distance";
+	public static final String PATH_UPDATE_DIRECTION = "/cgeoWear/update/direction";
 	public static final String PATH_KILL_APP = "/cgeoWear/killApp";
 
 	@Override
@@ -38,12 +38,20 @@ public class ListenerService extends WearableListenerService {
 			i.putExtra(MessageDataSet.KEY_DIRECTION, dataSet.getDirection());
 			startActivity(i);
 
-		//Update location action
-		} else if(PATH_UPDATE.equals(messageEvent.getPath())) {
+		//Update distance action
+		} else if(PATH_UPDATE_DISTANCE.equals(messageEvent.getPath())) {
 			MessageDataSet dataSet = new MessageDataSet(DataMap.fromByteArray(messageEvent.getData()));
 
-			Intent updateIntent = new Intent(PATH_UPDATE);
+			Intent updateIntent = new Intent(PATH_UPDATE_DISTANCE);
 			updateIntent.putExtra(MessageDataSet.KEY_DISTANCE, dataSet.getDistance());
+
+			LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(updateIntent);
+
+		//Update direction action
+		} else if(PATH_UPDATE_DIRECTION.equals(messageEvent.getPath())) {
+			MessageDataSet dataSet = new MessageDataSet(DataMap.fromByteArray(messageEvent.getData()));
+
+			Intent updateIntent = new Intent(PATH_UPDATE_DIRECTION);
 			updateIntent.putExtra(MessageDataSet.KEY_DIRECTION, dataSet.getDirection());
 
 			LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(updateIntent);

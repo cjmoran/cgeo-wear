@@ -55,7 +55,8 @@ public class cgeoWear extends Activity
 		//Register BroadcastReceiver for location updates
 		broadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
 		IntentFilter updateFilter = new IntentFilter();
-		updateFilter.addAction(ListenerService.PATH_UPDATE);
+		updateFilter.addAction(ListenerService.PATH_UPDATE_DISTANCE);
+		updateFilter.addAction(ListenerService.PATH_UPDATE_DIRECTION);
 		updateFilter.addAction(ListenerService.PATH_KILL_APP);
 		broadcastManager.registerReceiver(broadcastReceiver, updateFilter);
 
@@ -96,9 +97,12 @@ public class cgeoWear extends Activity
 		@Override
 		public void onReceive(Context context, Intent intent) {
 
-			//Location update received
-			if(ListenerService.PATH_UPDATE.equals(intent.getAction())) {
+			//Distance update received
+			if(ListenerService.PATH_UPDATE_DISTANCE.equals(intent.getAction())) {
 				setDistanceFormatted(intent.getFloatExtra(MessageDataSet.KEY_DISTANCE, 0f));
+
+			//Direction update received
+			} else if(ListenerService.PATH_UPDATE_DIRECTION.equals(intent.getAction())) {
 				rotateCompass(intent.getFloatExtra(MessageDataSet.KEY_DIRECTION, 0f));
 
 			//Kill app

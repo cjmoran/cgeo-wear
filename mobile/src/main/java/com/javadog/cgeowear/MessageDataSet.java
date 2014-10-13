@@ -24,20 +24,6 @@ public class MessageDataSet {
 		direction = dir;
 	}
 
-	/**
-	 * Constructs the new object using the supplied DataMap.
-	 *
-	 * @param map The DataMap containing values to instantiate.
-	 */
-	public MessageDataSet(DataMap map) {
-		this(
-				map.getString(KEY_CACHE_NAME),
-				map.getString(KEY_GEOCODE),
-				map.getFloat(KEY_DISTANCE),
-				map.getFloat(KEY_DIRECTION)
-		);
-	}
-
 	public DataMap putToDataMap() {
 		DataMap map = new DataMap();
 
@@ -49,30 +35,9 @@ public class MessageDataSet {
 		return map;
 	}
 
-	public String getCacheName() {
-		return cacheName;
-	}
-
-	public String getGeocode() {
-		return geocode;
-	}
-
-	public float getDistance() {
-		return distance;
-	}
-
-	public float getDirection() {
-		return direction;
-	}
-
 	public static class Builder {
 		private String nestedCacheName, nestedGeocode;
 		private float nestedDistance, nestedDirection;
-
-		public Builder(float dist, float dir) {
-			nestedDistance = dist;
-			nestedDirection = dir;
-		}
 
 		public Builder cacheName(String name) {
 			nestedCacheName = name;
@@ -81,6 +46,16 @@ public class MessageDataSet {
 
 		public Builder geocode(String code) {
 			nestedGeocode = code;
+			return this;
+		}
+
+		public Builder distance(float dist) {
+			nestedDistance = dist;
+			return this;
+		}
+
+		public Builder direction(float dir) {
+			nestedDirection = dir;
 			return this;
 		}
 

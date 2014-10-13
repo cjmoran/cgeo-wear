@@ -38,17 +38,6 @@ public class MessageDataSet {
 		);
 	}
 
-	public DataMap putToDataMap() {
-		DataMap map = new DataMap();
-
-		map.putString(KEY_CACHE_NAME, cacheName);
-		map.putString(KEY_GEOCODE, geocode);
-		map.putFloat(KEY_DISTANCE, distance);
-		map.putFloat(KEY_DIRECTION, direction);
-
-		return map;
-	}
-
 	public String getCacheName() {
 		return cacheName;
 	}
@@ -63,29 +52,5 @@ public class MessageDataSet {
 
 	public float getDirection() {
 		return direction;
-	}
-
-	public static class Builder {
-		private String nestedCacheName, nestedGeocode;
-		private float nestedDistance, nestedDirection;
-
-		public Builder(float dist, float dir) {
-			nestedDistance = dist;
-			nestedDirection = dir;
-		}
-
-		public Builder cacheName(String name) {
-			nestedCacheName = name;
-			return this;
-		}
-
-		public Builder geocode(String code) {
-			nestedGeocode = code;
-			return this;
-		}
-
-		public MessageDataSet build() {
-			return new MessageDataSet(nestedCacheName, nestedGeocode, nestedDistance, nestedDirection);
-		}
 	}
 }

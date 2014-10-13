@@ -45,6 +45,9 @@ public class WearService extends Service
 	private static final long LOCATION_UPDATE_INTERVAL = 2000;
 	private static final long LOCATION_UPDATE_MAX_INTERVAL = 1000;
 
+	//App will smooth out compass samples and send the result every n milliseconds
+	private static final long DIRECTION_UPDATE_SPEED = 2000;
+
 	private LocationRequest locationRequest;
 
 	private static final String EXTRA_CACHE_NAME = "cgeo.geocaching.wear.extra.CACHE_NAME";
@@ -61,9 +64,9 @@ public class WearService extends Service
 
 	private String cacheName;
 	private String geocode;
+	private float direction;
 	private Location geocacheLocation;
 	private Location currentLocation;
-	private float direction;
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
@@ -128,8 +131,8 @@ public class WearService extends Service
 		sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
 		accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 		magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-		sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
-		sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_GAME);
+		sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+		sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
 
 		//Connect to Google APIs
 		apiClient = new GoogleApiClient.Builder(this, this, this)
@@ -243,7 +246,7 @@ public class WearService extends Service
 			float distance = location.distanceTo(geocacheLocation);
 
 			//Send these values off to Android Wear
-			wearInterface.sendLocationUpdate(distance, direction);
+			wearInterface.sendDistanceUpdate(distance);
 		}
 	};
 
@@ -254,9 +257,10 @@ public class WearService extends Service
 
 	float[] gravity;
 	float[] geomagnetic;
+	float oldDirection = 0, oldLatitude = 0, oldLongitude = 0, oldAltitude = 0;
+	long prevTime = System.currentTimeMillis();
 	/**
-	 * Handles compass azimuth rotation. Direction values are simply stored in the instance
-	 * and sent along with location updates.
+	 * Handles compass azimuth rotation.
 	 */
 	@Override
 	public void onSensorChanged(SensorEvent event) {
@@ -275,25 +279,63 @@ public class WearService extends Service
 				float[] orientation = new float[3];
 				SensorManager.getOrientation(R, orientation);
 				float azimuth = (float) Math.toDegrees(orientation[0]);
+				float pitch = (float) Math.toDegrees(orientation[1]);
 
 				if(currentLocation != null) {
+					float smoothedLatitude = smoothSensorValues(
+							oldLatitude, (float) currentLocation.getLatitude(), 1/3f);
+					float smoothedLongitude = smoothSensorValues(
+							oldLongitude, (float) currentLocation.getLongitude(), 1/3f);
+					float smoothedAltitude = smoothSensorValues(
+							oldAltitude, (float) currentLocation.getAltitude(), 1/3f);
+
 					GeomagneticField geomagneticField = new GeomagneticField(
-							(float) currentLocation.getLatitude(),
-							(float) currentLocation.getLongitude(),
-							(float) currentLocation.getAltitude(),
+							smoothedLatitude,
+							smoothedLongitude,
+							smoothedAltitude,
 							System.currentTimeMillis()
 					);
 					azimuth += geomagneticField.getDeclination();
+
 					float bearing = currentLocation.bearingTo(geocacheLocation);
 
-					direction = -(azimuth - bearing);
+					direction = smoothSensorValues(oldDirection, -(azimuth - bearing), 1/5f);
+
+					//If the user puts the phone in his/her pocket upside-down, invert the compass
+					if(pitch > 0) {
+						direction += 180f;
+					}
+
+					//Set old values to current values (for smoothing)
+					oldDirection = direction;
+					oldLatitude = smoothedLatitude;
+					oldLongitude = smoothedLongitude;
+					oldAltitude = smoothedAltitude;
+
+					//Send direction update to Android Wear if update interval has passed
+					long currentTime = System.currentTimeMillis();
+					if((currentTime - prevTime) > DIRECTION_UPDATE_SPEED) {
+						wearInterface.sendDirectionUpdate(direction);
+						prevTime = currentTime;
+					}
 				}
 			}
 		}
 	}
 
+	/**
+	 * A low-pass filter for smoothing out noisy sensor values.
+	 *
+	 * @param oldVal The previous value.
+	 * @param newVal The new value.
+	 * @param decayFactor Decay factor. (1 / decayFactor) = number of samples to smooth over.
+	 * @return The smoothed value.
+	 */
+	private float smoothSensorValues(float oldVal, float newVal, float decayFactor) {
+		return oldVal * (1 - decayFactor) + newVal * decayFactor;
+	}
+
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
 	}
 }
