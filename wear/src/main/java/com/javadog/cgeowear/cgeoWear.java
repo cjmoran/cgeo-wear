@@ -246,7 +246,7 @@ public class cgeoWear extends Activity
 		if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 			gravity = event.values.clone();
 		} else if(event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-			geomagnetic = event.values.clone(); //TODO: How the hell to access compass?
+			geomagnetic = event.values.clone(); //TODO: Some watches don't let me access the compass correctly yet.
 		}
 
 		if(gravity != null && geomagnetic != null) {

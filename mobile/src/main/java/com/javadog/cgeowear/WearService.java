@@ -52,10 +52,11 @@ public class WearService extends Service
 
 	private LocationRequest locationRequest;
 
-	private static final String EXTRA_CACHE_NAME = "cgeo.geocaching.wear.extra.CACHE_NAME";
-	private static final String EXTRA_GEOCODE = "cgeo.geocaching.wear.extra.GEOCODE";
-	private static final String EXTRA_LATITUDE = "cgeo.geocaching.wear.extra.LATITUDE";
-	private static final String EXTRA_LONGITUDE = "cgeo.geocaching.wear.extra.LONGITUDE";
+	private static final String PREFIX = "cgeo.geocaching.intent.extra.";
+	private static final String EXTRA_CACHE_NAME = PREFIX + "name";
+	private static final String EXTRA_GEOCODE = PREFIX + "geocode";
+	private static final String EXTRA_LATITUDE = PREFIX + "latitude";
+	private static final String EXTRA_LONGITUDE = PREFIX + "longitude";
 
 	private GoogleApiClient apiClient;
 	private WearInterface wearInterface;
@@ -84,6 +85,18 @@ public class WearService extends Service
 				geocacheLocation.setLatitude(latitude);
 				geocacheLocation.setLongitude(longitude);
 
+				//Connect to Google APIs
+				if(apiClient != null) {
+					apiClient.unregisterConnectionCallbacks(this);
+					apiClient.unregisterConnectionFailedListener(this);
+					apiClient.disconnect();
+				}
+				apiClient = new GoogleApiClient.Builder(this, this, this)
+						.addApi(Wearable.API)
+						.addApi(LocationServices.API)
+						.build();
+				apiClient.connect();
+
 				Toast.makeText(
 						getApplicationContext(), getText(R.string.toast_service_started), Toast.LENGTH_SHORT).show();
 			}
@@ -102,8 +115,6 @@ public class WearService extends Service
 	 * Starts service & watch app.
 	 */
 	private void handleInit() {
-		//TODO: Ensure an Android Wear device is paired
-
 		SharedPreferences userPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
 		//Register listener for INTENT_STOP events
@@ -132,7 +143,7 @@ public class WearService extends Service
 				.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
 		//Start reading compass sensors if using phone compass
-		useWatchCompass = userPrefs.getBoolean("pref_use_watch_compass", true);
+		useWatchCompass = userPrefs.getBoolean("pref_use_watch_compass", false);
 		if(!useWatchCompass) {
 			sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
 			accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -140,13 +151,6 @@ public class WearService extends Service
 			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
 			sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
 		}
-
-		//Connect to Google APIs
-		apiClient = new GoogleApiClient.Builder(this, this, this)
-				.addApi(Wearable.API)
-				.addApi(LocationServices.API)
-				.build();
-		apiClient.connect();
 
 		//Start service in foreground
 		startForeground(R.string.app_name, notification);
@@ -223,12 +227,13 @@ public class WearService extends Service
 
 				try {
 					wearInterface = new WearInterface(apiClient, connectedWearDevices.iterator().next());
-					wearInterface.initTracking(cacheName, geocode, 12.34f, 0.12f, useWatchCompass, geocacheLocation);
+					wearInterface.initTracking(cacheName, geocode, 0f, 0f, useWatchCompass, geocacheLocation);
 				} catch(ConnectException e) {
 					Log.e(DEBUG_TAG, "Couldn't send initial tracking data.");
 				} catch(NoSuchElementException e) {
-					//TODO: Handle this with a warning in the UI
 					Log.e(DEBUG_TAG, "No Wear devices connected. Killing service...");
+
+					Toast.makeText(getApplicationContext(), "No Android Wear device paired!", Toast.LENGTH_LONG).show();
 					stopSelf();
 				}
 			}

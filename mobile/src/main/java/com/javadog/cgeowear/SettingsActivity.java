@@ -18,23 +18,6 @@ public class SettingsActivity extends Activity {
 		public void onCreate(Bundle savedInstanceState) {
 			super.onCreate(savedInstanceState);
 			addPreferencesFromResource(R.xml.layout_preferences);
-
-			//=====================Debugging code===================
-			Preference debugButton = findPreference("button_debug");
-			debugButton.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-				@Override
-				public boolean onPreferenceClick(Preference preference) {
-					Intent intent = new Intent("cgeo.geocaching.wear.NAVIGATE_TO");
-					intent.putExtra("cgeo.geocaching.wear.extra.CACHE_NAME", "Sample Geocache");
-					intent.putExtra("cgeo.geocaching.wear.extra.GEOCODE", "GC10101");
-					intent.putExtra("cgeo.geocaching.wear.extra.LATITUDE", 35.28897);
-					intent.putExtra("cgeo.geocaching.wear.extra.LONGITUDE", -80.73699);
-					getActivity().startService(intent);
-
-					return true;
-				}
-			});
-			//====================End debugging code================
 		}
 	}
 }

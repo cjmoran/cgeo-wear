@@ -33,7 +33,7 @@
 
 		<service
 			android:name=".WearService"
-			android:exported="false">
+			android:exported="true">
 			<intent-filter>
 				<action android:name="cgeo.geocaching.wear.NAVIGATE_TO"/>
 				<category android:name="android.intent.category.DEFAULT"/>

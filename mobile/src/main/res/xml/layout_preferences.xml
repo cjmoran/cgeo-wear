@@ -3,16 +3,18 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+	<Preference
+		android:title="@string/link_usage_guide"
+		android:summary="@string/link_usage_guide_summary">
+		<intent
+			android:action="android.intent.action.VIEW"
+			android:data="https://github.com/culmor30/cgeo-wear/wiki/Usage-Guide"/>
+	</Preference>
+
 	<CheckBoxPreference
 		android:key="pref_use_watch_compass"
-	    android:defaultValue="true"
+	    android:defaultValue="false"
 	    android:title="@string/pref_title_watch_compass"
 	    android:summary="@string/pref_summary_watch_compass"/>
-
-	<!-- For debugging -->
-	<Preference
-		android:key="button_debug"
-		android:title="Debug"
-	    android:summary="Select to start service with debug values"/>
 
 </PreferenceScreen>
