@@ -32,6 +32,7 @@ public class ListenerService extends WearableListenerService {
 
 			//Start the main Activity
 			Intent i = new Intent(this, cgeoWear.class);
+			i.setAction(PATH_INIT);
 			i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 			i.putExtra(MessageDataSet.KEY_CACHE_NAME, dataSet.getCacheName());
 			i.putExtra(MessageDataSet.KEY_GEOCODE, dataSet.getGeocode());
