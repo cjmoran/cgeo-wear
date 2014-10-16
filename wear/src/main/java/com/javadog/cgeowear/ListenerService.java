@@ -41,7 +41,7 @@ public class ListenerService extends WearableListenerService {
 			i.putExtra(MessageDataSet.KEY_CACHE_LOCATION, dataSet.getCacheLocation());
 			startActivity(i);
 
-		//Update distance action
+			//Update distance action
 		} else if(PATH_UPDATE_DISTANCE.equals(messageEvent.getPath())) {
 			MessageDataSet dataSet = new MessageDataSet(DataMap.fromByteArray(messageEvent.getData()));
 
@@ -50,7 +50,7 @@ public class ListenerService extends WearableListenerService {
 
 			LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(updateIntent);
 
-		//Update direction action
+			//Update direction action
 		} else if(PATH_UPDATE_DIRECTION.equals(messageEvent.getPath())) {
 			MessageDataSet dataSet = new MessageDataSet(DataMap.fromByteArray(messageEvent.getData()));
 
@@ -59,7 +59,7 @@ public class ListenerService extends WearableListenerService {
 
 			LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(updateIntent);
 
-		//Update location action
+			//Update location action
 		} else if(PATH_UPDATE_LOCATION.equals(messageEvent.getPath())) {
 			MessageDataSet dataSet = new MessageDataSet(DataMap.fromByteArray(messageEvent.getData()));
 
@@ -68,7 +68,7 @@ public class ListenerService extends WearableListenerService {
 
 			LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(updateIntent);
 
-		//Kill app (when phone-side app is stopped)
+			//Kill app (when phone-side app is stopped)
 		} else if(PATH_KILL_APP.equals(messageEvent.getPath())) {
 			Intent killIntent = new Intent(PATH_KILL_APP);
 			LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(killIntent);

@@ -1,8 +1,10 @@
 package com.javadog.cgeowear;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.GeomagneticField;
@@ -56,16 +58,36 @@ public class cgeoWear extends Activity
 	private String connectedNodeId;
 
 	@Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_cgeo_wear);
+
+		Intent i = getIntent();
+
+		//Let users know not to launch the app directly if they did (it's not necessary)
+		if(!ListenerService.PATH_INIT.equals(i.getAction())) {
+			new AlertDialog.Builder(this)
+					.setMessage(getString(R.string.app_direct_launch_warning))
+					.setOnDismissListener(new DialogInterface.OnDismissListener() {
+						@Override
+						public void onDismiss(DialogInterface dialog) {
+							cgeoWear.this.finish();
+						}
+					})
+					.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							cgeoWear.this.finish();
+						}
+					})
+					.show();
+		}
 
 		tv_cacheName = (TextView) findViewById(R.id.textview_cache_name);
 		tv_geocode = (TextView) findViewById(R.id.textview_geocode);
 		tv_distance = (TextView) findViewById(R.id.textview_distance);
 		iv_compass = (ImageView) findViewById(R.id.compass);
 
-		Intent i = getIntent();
 		initScreen(i);
 
 		//Register BroadcastReceiver for location updates
@@ -81,7 +103,7 @@ public class cgeoWear extends Activity
 				.addApi(Wearable.API)
 				.build();
 		apiClient.connect();
-    }
+	}
 
 	/**
 	 * Initializes the screen, whether the Activity was freshly-launched or onNewIntent was run.
@@ -123,7 +145,6 @@ public class cgeoWear extends Activity
 
 	/**
 	 * Handles location updates, updates UI accordingly.
-	 *
 	 * Also kills the app if requested by the phone.
 	 */
 	private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -134,16 +155,16 @@ public class cgeoWear extends Activity
 			if(ListenerService.PATH_UPDATE_DISTANCE.equals(intent.getAction())) {
 				setDistanceFormatted(intent.getFloatExtra(MessageDataSet.KEY_DISTANCE, 0f));
 
-			//Direction update received
+				//Direction update received
 			} else if(ListenerService.PATH_UPDATE_DIRECTION.equals(intent.getAction())) {
 				rotateCompass(intent.getFloatExtra(MessageDataSet.KEY_DIRECTION, 0f));
 
-			//Location update received
+				//Location update received
 			} else if(ListenerService.PATH_UPDATE_LOCATION.equals(intent.getAction())) {
 				Log.d(DEBUG_TAG, "Location update received from phone.");
 				currentLocation = intent.getParcelableExtra(MessageDataSet.KEY_LOCATION);
 
-			//Kill app
+				//Kill app
 			} else if(ListenerService.PATH_KILL_APP.equals(intent.getAction())) {
 				Log.d(cgeoWear.DEBUG_TAG, "Phone service stopped; killing watch app.");
 				cgeoWear.this.finish();
@@ -165,6 +186,7 @@ public class cgeoWear extends Activity
 
 	/**
 	 * Handles rotation of the compass to a new direction.
+	 *
 	 * @param newDirection Direction to turn to, in degrees.
 	 */
 	private void rotateCompass(float newDirection) {
@@ -190,7 +212,7 @@ public class cgeoWear extends Activity
 		broadcastManager.unregisterReceiver(broadcastReceiver);
 
 		//Attempt to tell the phone service to stop, then disconnect from Google APIs
-		if(apiClient.isConnected() && connectedNodeId != null) {
+		if(apiClient != null && apiClient.isConnected() && connectedNodeId != null) {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
@@ -238,6 +260,7 @@ public class cgeoWear extends Activity
 	float[] geomagnetic;
 	float oldDirection = 0, oldLatitude = 0, oldLongitude = 0, oldAltitude = 0;
 	long prevTime = System.currentTimeMillis();
+
 	/**
 	 * Interprets watch compass if user has requested that feature.
 	 */
@@ -261,11 +284,11 @@ public class cgeoWear extends Activity
 
 				if(currentLocation != null) {
 					float smoothedLatitude = smoothSensorValues(
-							oldLatitude, (float) currentLocation.getLatitude(), 1/3f);
+							oldLatitude, (float) currentLocation.getLatitude(), 1 / 3f);
 					float smoothedLongitude = smoothSensorValues(
-							oldLongitude, (float) currentLocation.getLongitude(), 1/3f);
+							oldLongitude, (float) currentLocation.getLongitude(), 1 / 3f);
 					float smoothedAltitude = smoothSensorValues(
-							oldAltitude, (float) currentLocation.getAltitude(), 1/3f);
+							oldAltitude, (float) currentLocation.getAltitude(), 1 / 3f);
 
 					GeomagneticField geomagneticField = new GeomagneticField(
 							smoothedLatitude,
@@ -277,7 +300,7 @@ public class cgeoWear extends Activity
 
 					float bearing = currentLocation.bearingTo(geocacheLocation);
 
-					direction = smoothSensorValues(oldDirection, -(azimuth - bearing), 1/5f);
+					direction = smoothSensorValues(oldDirection, -(azimuth - bearing), 1 / 5f);
 
 					//Set old values to current values (for smoothing)
 					oldDirection = direction;
@@ -299,8 +322,8 @@ public class cgeoWear extends Activity
 	/**
 	 * A low-pass filter for smoothing out noisy sensor values.
 	 *
-	 * @param oldVal The previous value.
-	 * @param newVal The new value.
+	 * @param oldVal      The previous value.
+	 * @param newVal      The new value.
 	 * @param decayFactor Decay factor. (1 / decayFactor) = number of samples to smooth over.
 	 * @return The smoothed value.
 	 */

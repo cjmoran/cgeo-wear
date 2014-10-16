@@ -5,4 +5,9 @@
 
 	<string name="description_compass">Compass</string>
 
+	<string name="app_direct_launch_warning">
+		There\'s no need to launch this app manually!\n\n
+		Just use \'Navigate -> Android Wear\' from a cache listing in c:geo.
+	</string>
+
 </resources>
