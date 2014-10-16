@@ -1,5 +1,6 @@
-#My local image assets folder
+#My local assets folders
 Image\ Assets/
+Keystores/
 
 # Built application files
 *.apk
