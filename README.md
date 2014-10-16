@@ -1,4 +1,4 @@
-# c:geo Wear
+![c:geo Wear Promo Graphic](http://i.imgur.com/oxs1d46.png)
 - - -
 
 c:geo Wear is a plugin for the popular Android geocaching app 'c:geo' which allows users to navigate to a geocache using their Android Wear-enabled smartwatch.
