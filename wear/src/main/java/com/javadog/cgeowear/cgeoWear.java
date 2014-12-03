@@ -44,6 +44,7 @@ import com.google.android.gms.wearable.Wearable;
 
 import java.text.DecimalFormat;
 import java.util.HashSet;
+import java.util.NoSuchElementException;
 
 public class cgeoWear extends Activity
 		implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
@@ -256,7 +257,12 @@ public class cgeoWear extends Activity
 					connectedWearDevices.add(node.getId());
 				}
 
-				connectedNodeId = connectedWearDevices.iterator().next();
+				try {
+					connectedNodeId = connectedWearDevices.iterator().next();
+				} catch(NoSuchElementException e) {
+					Log.wtf(DEBUG_TAG, "No paired devices found.");
+					connectedNodeId = null;
+				}
 			}
 		}).start();
 	}
