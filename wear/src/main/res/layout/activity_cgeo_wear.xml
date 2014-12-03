@@ -68,9 +68,11 @@
 			android:layout_height="wrap_content"
 			android:layout_above="@id/textview_cache_name"
 			android:layout_below="@id/rl_top_portion"
+			android:paddingTop="@dimen/compass_padding"
+			android:paddingBottom="@dimen/compass_padding"
 			android:layout_centerInParent="true"
 			android:scaleType="centerInside"
-			android:src="@drawable/directional_compass"
+			android:src="@drawable/compass"
 			android:contentDescription="@string/description_compass"/>
 
 	</RelativeLayout>

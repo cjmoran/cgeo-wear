@@ -206,8 +206,6 @@ public class cgeoWear extends Activity
 	 */
 	private void rotateCompass(float newDirection) {
 		if(direction != newDirection) {
-			Log.d(DEBUG_TAG, "Rotating compass from " + direction + " to " + newDirection);
-
 			RotateAnimation anim = new RotateAnimation(
 					direction,
 					newDirection,
