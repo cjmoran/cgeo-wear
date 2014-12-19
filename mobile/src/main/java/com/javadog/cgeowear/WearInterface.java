@@ -40,7 +40,7 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 
 	/**
 	 * @param client A reference to the Google API client.
-	 * @param nId The ID of the paired Wear device to use.
+	 * @param nId    The ID of the paired Wear device to use.
 	 */
 	public WearInterface(GoogleApiClient client, String nId) {
 		apiClient = client;
@@ -52,7 +52,7 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 	 *
 	 * @param cacheName The Geocache's title.
 	 * @param geocode   The Geocache's Geocode.
-	 * @param distance The distance to the geocache.
+	 * @param distance  The distance to the geocache.
 	 * @param direction The direction to the geocache.
 	 */
 	public void initTracking(String cacheName, String geocode, float distance, float direction, boolean watchCompass,

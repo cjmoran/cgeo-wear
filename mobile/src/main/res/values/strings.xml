@@ -2,7 +2,6 @@
     <string name="app_name">c:geo Wear</string>
 
 	<string name="notification_text">Touch to stop navigating</string>
-	<string name="toast_service_started">Navigating on Android Wear</string>
 	<string name="gps_disabled_exit_message">Location disabled; stopping Android Wear navigation</string>
 
 	<string name="link_usage_guide">Usage Guide</string>

@@ -30,7 +30,10 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Handler.Callback;
 import android.os.IBinder;
+import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
@@ -73,6 +76,10 @@ public class WearService extends Service
 	private static final String EXTRA_LATITUDE = PREFIX + "latitude";
 	private static final String EXTRA_LONGITUDE = PREFIX + "longitude";
 
+	private static final String MESSAGE_NAVIGATING_NOW = "Navigating on Android Wear";
+	private static final String MESSAGE_NO_WEAR_DEVICE = "No Android Wear device paired!";
+	private static final String MESSAGE_ERROR_COMMUNICATING = "Error communicating with Wear device. Contact support.";
+
 	private GoogleApiClient apiClient;
 	private WearInterface wearInterface;
 
@@ -111,9 +118,6 @@ public class WearService extends Service
 						.addApi(LocationServices.API)
 						.build();
 				apiClient.connect();
-
-				Toast.makeText(
-						getApplicationContext(), getText(R.string.toast_service_started), Toast.LENGTH_SHORT).show();
 			}
 		}
 
@@ -220,8 +224,24 @@ public class WearService extends Service
 	 * Stops the Android Wear counterpart to this app.
 	 */
 	private void stopWearApp() {
-		wearInterface.sendKillRequest();
+		if(wearInterface != null) {
+			wearInterface.sendKillRequest();
+		}
 	}
+
+	final Handler initThreadHandler = new Handler(new Callback() {
+		@Override
+		public boolean handleMessage(Message msg) {
+			//Display any String received as a Toast; quit if necessary
+			String message = (String) msg.obj;
+			Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
+
+			if(message.equals(MESSAGE_NO_WEAR_DEVICE) || message.equals(MESSAGE_ERROR_COMMUNICATING)) {
+				stopSelf();
+			}
+			return true;
+		}
+	});
 
 	@Override
 	public void onConnected(Bundle bundle) {
@@ -230,7 +250,7 @@ public class WearService extends Service
 		//Subscribe to location updates
 		LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, locationListener);
 
-		//Get ID of connected Wear device and send it the initial cache info
+		//Get ID of connected Wear device and send it the initial cache info (in another thread)
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -240,16 +260,22 @@ public class WearService extends Service
 					connectedWearDevices.add(node.getId());
 				}
 
+				Message m = new Message();
 				try {
 					wearInterface = new WearInterface(apiClient, connectedWearDevices.iterator().next());
 					wearInterface.initTracking(cacheName, geocode, 0f, 0f, useWatchCompass, geocacheLocation);
+					m.obj = MESSAGE_NAVIGATING_NOW;
+
 				} catch(ConnectException e) {
 					Log.e(DEBUG_TAG, "Couldn't send initial tracking data.");
+					m.obj = MESSAGE_ERROR_COMMUNICATING;
+
 				} catch(NoSuchElementException e) {
 					Log.e(DEBUG_TAG, "No Wear devices connected. Killing service...");
+					m.obj = MESSAGE_NO_WEAR_DEVICE;
 
-					Toast.makeText(getApplicationContext(), "No Android Wear device paired!", Toast.LENGTH_LONG).show();
-					stopSelf();
+				} finally {
+					initThreadHandler.sendMessage(m);
 				}
 			}
 		}).start();
@@ -292,6 +318,7 @@ public class WearService extends Service
 	float[] geomagnetic;
 	float oldDirection = 0, oldLatitude = 0, oldLongitude = 0, oldAltitude = 0;
 	long prevTime = System.currentTimeMillis();
+
 	/**
 	 * Handles compass rotation.
 	 */
@@ -316,11 +343,11 @@ public class WearService extends Service
 
 				if(currentLocation != null) {
 					float smoothedLatitude = smoothSensorValues(
-							oldLatitude, (float) currentLocation.getLatitude(), 1/3f);
+							oldLatitude, (float) currentLocation.getLatitude(), 1 / 3f);
 					float smoothedLongitude = smoothSensorValues(
-							oldLongitude, (float) currentLocation.getLongitude(), 1/3f);
+							oldLongitude, (float) currentLocation.getLongitude(), 1 / 3f);
 					float smoothedAltitude = smoothSensorValues(
-							oldAltitude, (float) currentLocation.getAltitude(), 1/3f);
+							oldAltitude, (float) currentLocation.getAltitude(), 1 / 3f);
 
 					GeomagneticField geomagneticField = new GeomagneticField(
 							smoothedLatitude,
@@ -359,8 +386,8 @@ public class WearService extends Service
 	/**
 	 * A low-pass filter for smoothing out noisy sensor values.
 	 *
-	 * @param oldVal The previous value.
-	 * @param newVal The new value.
+	 * @param oldVal      The previous value.
+	 * @param newVal      The new value.
 	 * @param decayFactor Decay factor. (1 / decayFactor) = number of samples to smooth over.
 	 * @return The smoothed value.
 	 */
