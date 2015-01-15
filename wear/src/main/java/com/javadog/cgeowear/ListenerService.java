@@ -53,7 +53,6 @@ public class ListenerService extends WearableListenerService {
 			i.putExtra(MessageDataSet.KEY_GEOCODE, dataSet.getGeocode());
 			i.putExtra(MessageDataSet.KEY_DISTANCE, dataSet.getDistance());
 			i.putExtra(MessageDataSet.KEY_DIRECTION, dataSet.getDirection());
-			i.putExtra(MessageDataSet.KEY_WATCH_COMPASS, dataSet.getWatchCompassPref());
 			i.putExtra(MessageDataSet.KEY_CACHE_LOCATION, dataSet.getCacheLocation());
 			startActivity(i);
 
@@ -72,15 +71,6 @@ public class ListenerService extends WearableListenerService {
 
 			Intent updateIntent = new Intent(PATH_UPDATE_DIRECTION);
 			updateIntent.putExtra(MessageDataSet.KEY_DIRECTION, dataSet.getDirection());
-
-			LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(updateIntent);
-
-			//Update location action
-		} else if(PATH_UPDATE_LOCATION.equals(messageEvent.getPath())) {
-			MessageDataSet dataSet = new MessageDataSet(DataMap.fromByteArray(messageEvent.getData()));
-
-			Intent updateIntent = new Intent(PATH_UPDATE_LOCATION);
-			updateIntent.putExtra(MessageDataSet.KEY_LOCATION, dataSet.getLocation());
 
 			LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(updateIntent);
 

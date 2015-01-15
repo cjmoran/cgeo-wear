@@ -32,7 +32,6 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 	public static final String PATH_INIT = "/cgeoWear/init";
 	public static final String PATH_UPDATE_DISTANCE = "/cgeoWear/update/distance";
 	public static final String PATH_UPDATE_DIRECTION = "/cgeoWear/update/direction";
-	public static final String PATH_UPDATE_LOCATION = "/cgeoWear/update/location";
 	public static final String PATH_KILL_APP = "/cgeoWear/killApp";
 
 	private GoogleApiClient apiClient;
@@ -55,15 +54,14 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 	 * @param distance  The distance to the geocache.
 	 * @param direction The direction to the geocache.
 	 */
-	public void initTracking(String cacheName, String geocode, float distance, float direction, boolean watchCompass,
-							 Location cacheLocation) throws ConnectException {
+	public void initTracking(String cacheName, String geocode, float distance, float direction, Location cacheLocation)
+			throws ConnectException {
 		MessageDataSet dataSet = new MessageDataSet.Builder()
 				.cacheName(cacheName)
 				.geocode(geocode)
 				.distance(distance)
 				.direction(direction)
 				.cacheLocation(cacheLocation)
-				.useWatchCompass(watchCompass)
 				.build();
 
 		MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
@@ -82,15 +80,6 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 
 		Wearable.MessageApi.sendMessage(
 				apiClient, nodeId, PATH_UPDATE_DISTANCE, dataSet.putToDataMap().toByteArray()).setResultCallback(this);
-	}
-
-	public void sendLocationUpdate(Location location) {
-		MessageDataSet dataSet = new MessageDataSet.Builder()
-				.location(location)
-				.build();
-
-		Wearable.MessageApi.sendMessage(
-				apiClient, nodeId, PATH_UPDATE_LOCATION, dataSet.putToDataMap().toByteArray()).setResultCallback(this);
 	}
 
 	public void sendDirectionUpdate(float direction) {

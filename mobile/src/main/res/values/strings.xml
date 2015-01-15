@@ -1,13 +1,10 @@
 <resources>
-    <string name="app_name">c:geo Wear</string>
+	<string name="app_name">c:geo Wear</string>
 
 	<string name="notification_text">Touch to stop navigating</string>
 	<string name="gps_disabled_exit_message">Location disabled; stopping Android Wear navigation</string>
 
 	<string name="link_usage_guide">Usage Guide</string>
 	<string name="link_usage_guide_summary">Instructions for using this app</string>
-
-	<string name="pref_title_watch_compass">Use Watch Compass</string>
-	<string name="pref_summary_watch_compass">Experimental - some watches don\'t work yet (ex. Moto 360).</string>
 
 </resources>

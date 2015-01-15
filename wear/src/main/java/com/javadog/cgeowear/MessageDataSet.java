@@ -27,12 +27,6 @@ public class MessageDataSet {
 	public static final String KEY_GEOCODE = "geocode";
 	public static final String KEY_DISTANCE = "distance";
 	public static final String KEY_DIRECTION = "direction";
-	public static final String KEY_WATCH_COMPASS = "useWatchCompass";
-
-	public static final String KEY_LOCATION = "location";
-	public static final String KEY_LATITUDE = "latitude";
-	public static final String KEY_LONGITUDE = "longitude";
-	public static final String KEY_ALTITUDE = "altitude";
 
 	public static final String KEY_CACHE_LOCATION = "cacheLocation";
 	public static final String KEY_CACHE_LATITUDE = "cacheLatitude";
@@ -40,18 +34,16 @@ public class MessageDataSet {
 
 	private final String cacheName, geocode;
 	private final float distance, direction;
-	private Location location, cacheLocation;
-	private boolean useWatchCompass;
+	private Location cacheLocation;
 
 	/**
 	 * Do not call directly, use MessageDataSet.Builder to obtain a new instance.
 	 */
-	private MessageDataSet(String name, String code, float dist, float dir, boolean watchCompass) {
+	private MessageDataSet(String name, String code, float dist, float dir) {
 		cacheName = name;
 		geocode = code;
 		distance = dist;
 		direction = dir;
-		useWatchCompass = watchCompass;
 	}
 
 	/**
@@ -64,15 +56,8 @@ public class MessageDataSet {
 				map.getString(KEY_CACHE_NAME),
 				map.getString(KEY_GEOCODE),
 				map.getFloat(KEY_DISTANCE),
-				map.getFloat(KEY_DIRECTION),
-				map.getBoolean(KEY_WATCH_COMPASS)
+				map.getFloat(KEY_DIRECTION)
 		);
-
-		Location loc = new Location("phoneApp");
-		loc.setLatitude(map.getDouble(KEY_LATITUDE, 0d));
-		loc.setLongitude(map.getDouble(KEY_LONGITUDE, 0d));
-		loc.setAltitude(map.getDouble(KEY_ALTITUDE, 0d));
-		setLocation(loc);
 
 		Location cacheLoc = new Location("phoneApp");
 		cacheLoc.setLatitude(map.getDouble(KEY_CACHE_LATITUDE, 0d));
@@ -96,20 +81,8 @@ public class MessageDataSet {
 		return direction;
 	}
 
-	public boolean getWatchCompassPref() {
-		return useWatchCompass;
-	}
-
-	public Location getLocation() {
-		return location;
-	}
-
 	public Location getCacheLocation() {
 		return cacheLocation;
-	}
-
-	private void setLocation(Location loc) {
-		location = loc;
 	}
 
 	private void setCacheLocation(Location loc) {

@@ -86,7 +86,6 @@ public class WearService extends Service
 	private SensorManager sensorManager;
 	private Sensor accelerometer;
 	private Sensor magnetometer;
-	private boolean useWatchCompass;
 
 	private String cacheName;
 	private String geocode;
@@ -161,15 +160,12 @@ public class WearService extends Service
 				.setFastestInterval(LOCATION_UPDATE_MAX_INTERVAL)
 				.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-		//Start reading compass sensors if using phone compass
-		useWatchCompass = userPrefs.getBoolean("pref_use_watch_compass", false);
-		if(!useWatchCompass) {
-			sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-			accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-			magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-			sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
-		}
+		//Listen for updates from the phone compass
+		sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+		accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+		magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+		sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+		sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
 
 		//Start service in foreground
 		startForeground(R.string.app_name, notification);
@@ -212,10 +208,9 @@ public class WearService extends Service
 		//Stop listeners
 		unregisterReceiver(intentReceiver);
 		LocalBroadcastManager.getInstance(this).unregisterReceiver(localReceiver);
-		if(!useWatchCompass) {
-			sensorManager.unregisterListener(this, accelerometer);
-			sensorManager.unregisterListener(this, magnetometer);
-		}
+
+		sensorManager.unregisterListener(this, accelerometer);
+		sensorManager.unregisterListener(this, magnetometer);
 
 		super.onDestroy();
 	}
@@ -232,7 +227,7 @@ public class WearService extends Service
 	final Handler initThreadHandler = new Handler(new Callback() {
 		@Override
 		public boolean handleMessage(Message msg) {
-			//Display any String received as a Toast; quit if necessary
+			//Display any String received as a Toast; quit if there was a fatal error
 			String message = (String) msg.obj;
 			Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
 
@@ -254,7 +249,7 @@ public class WearService extends Service
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				HashSet<String> connectedWearDevices = new HashSet<String>();
+				HashSet<String> connectedWearDevices = new HashSet<>();
 				NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(apiClient).await();
 				for(Node node : nodes.getNodes()) {
 					connectedWearDevices.add(node.getId());
@@ -263,7 +258,7 @@ public class WearService extends Service
 				Message m = new Message();
 				try {
 					wearInterface = new WearInterface(apiClient, connectedWearDevices.iterator().next());
-					wearInterface.initTracking(cacheName, geocode, 0f, 0f, useWatchCompass, geocacheLocation);
+					wearInterface.initTracking(cacheName, geocode, 0f, 0f, geocacheLocation);
 					m.obj = MESSAGE_NAVIGATING_NOW;
 
 				} catch(ConnectException e) {
@@ -297,15 +292,11 @@ public class WearService extends Service
 			//Update stored currentLocation
 			currentLocation = location;
 
-			if(!useWatchCompass) {
-				//Calculate new distance (meters) to geocache
-				float distance = currentLocation.distanceTo(geocacheLocation);
+			//Calculate new distance (meters) to geocache
+			float distance = currentLocation.distanceTo(geocacheLocation);
 
-				//Send these values off to Android Wear
-				wearInterface.sendDistanceUpdate(distance);
-			} else {
-				wearInterface.sendLocationUpdate(currentLocation);
-			}
+			//Send these values off to Android Wear
+			wearInterface.sendDistanceUpdate(distance);
 		}
 	};
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent">
 
 	<Preference
 		android:title="@string/link_usage_guide"
@@ -10,11 +10,5 @@
 			android:action="android.intent.action.VIEW"
 			android:data="https://github.com/culmor30/cgeo-wear/wiki/Usage-Guide"/>
 	</Preference>
-
-	<CheckBoxPreference
-		android:key="pref_use_watch_compass"
-	    android:defaultValue="false"
-	    android:title="@string/pref_title_watch_compass"
-	    android:summary="@string/pref_summary_watch_compass"/>
 
 </PreferenceScreen>
