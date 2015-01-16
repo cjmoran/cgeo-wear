@@ -15,7 +15,6 @@
 
 package com.javadog.cgeowear;
 
-import android.location.Location;
 import android.util.Log;
 
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -54,14 +53,13 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 	 * @param distance  The distance to the geocache.
 	 * @param direction The direction to the geocache.
 	 */
-	public void initTracking(String cacheName, String geocode, float distance, float direction, Location cacheLocation)
+	public void initTracking(String cacheName, String geocode, float distance, float direction)
 			throws ConnectException {
 		MessageDataSet dataSet = new MessageDataSet.Builder()
 				.cacheName(cacheName)
 				.geocode(geocode)
 				.distance(distance)
 				.direction(direction)
-				.cacheLocation(cacheLocation)
 				.build();
 
 		MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(

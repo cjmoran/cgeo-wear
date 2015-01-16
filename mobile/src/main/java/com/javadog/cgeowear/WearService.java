@@ -133,8 +133,6 @@ public class WearService extends Service
 	 * Starts service & watch app.
 	 */
 	private void handleInit() {
-		SharedPreferences userPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-
 		//Register listener for INTENT_STOP events
 		IntentFilter filter = new IntentFilter(INTENT_STOP);
 		registerReceiver(intentReceiver, filter);
@@ -258,7 +256,7 @@ public class WearService extends Service
 				Message m = new Message();
 				try {
 					wearInterface = new WearInterface(apiClient, connectedWearDevices.iterator().next());
-					wearInterface.initTracking(cacheName, geocode, 0f, 0f, geocacheLocation);
+					wearInterface.initTracking(cacheName, geocode, 0f, 0f);
 					m.obj = MESSAGE_NAVIGATING_NOW;
 
 				} catch(ConnectException e) {

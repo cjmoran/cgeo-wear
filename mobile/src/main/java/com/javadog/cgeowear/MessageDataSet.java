@@ -15,8 +15,6 @@
 
 package com.javadog.cgeowear;
 
-import android.location.Location;
-
 import com.google.android.gms.wearable.DataMap;
 
 /**
