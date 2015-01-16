@@ -28,22 +28,17 @@ public class MessageDataSet {
 	public static final String KEY_DISTANCE = "distance";
 	public static final String KEY_DIRECTION = "direction";
 
-	public static final String KEY_CACHE_LATITUDE = "cacheLatitude";
-	public static final String KEY_CACHE_LONGITUDE = "cacheLongitude";
-
 	private final String cacheName, geocode;
 	private final float distance, direction;
-	private Location cacheLocation;
 
 	/**
 	 * Do not call directly, use MessageDataSet.Builder to obtain a new instance.
 	 */
-	private MessageDataSet(String name, String code, float dist, float dir, Location cacheLoc) {
+	private MessageDataSet(String name, String code, float dist, float dir) {
 		cacheName = name;
 		geocode = code;
 		distance = dist;
 		direction = dir;
-		cacheLocation = cacheLoc;
 	}
 
 	public DataMap putToDataMap() {
@@ -53,8 +48,6 @@ public class MessageDataSet {
 		map.putString(KEY_GEOCODE, geocode);
 		map.putFloat(KEY_DISTANCE, distance);
 		map.putFloat(KEY_DIRECTION, direction);
-		map.putDouble(KEY_CACHE_LATITUDE, (cacheLocation != null) ? cacheLocation.getLatitude() : 0d);
-		map.putDouble(KEY_CACHE_LONGITUDE, (cacheLocation != null) ? cacheLocation.getLongitude() : 0d);
 
 		return map;
 	}
@@ -62,7 +55,6 @@ public class MessageDataSet {
 	public static class Builder {
 		private String nestedCacheName, nestedGeocode;
 		private float nestedDistance, nestedDirection;
-		private Location nestedCacheLocation;
 
 		public Builder cacheName(String name) {
 			nestedCacheName = name;
@@ -84,14 +76,8 @@ public class MessageDataSet {
 			return this;
 		}
 
-		public Builder cacheLocation(Location l) {
-			nestedCacheLocation = l;
-			return this;
-		}
-
 		public MessageDataSet build() {
-			return new MessageDataSet(
-					nestedCacheName, nestedGeocode, nestedDistance, nestedDirection, nestedCacheLocation);
+			return new MessageDataSet(nestedCacheName, nestedGeocode, nestedDistance, nestedDirection);
 		}
 	}
 }

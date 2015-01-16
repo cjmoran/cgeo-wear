@@ -22,8 +22,7 @@
 	android:layout_height="match_parent"
 	android:background="@drawable/background_wear"
 	tools:context=".cgeoWear"
-	tools:deviceIds="wear"
-	android:keepScreenOn="true">
+	tools:deviceIds="wear">
 
 	<RelativeLayout
 		android:layout_width="match_parent"

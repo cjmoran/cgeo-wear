@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-	<string name="app_name">c:geo Wear</string>
+    <string name="app_name">c:geo Wear</string>
+    <string name="description_compass">Compass</string>
+    <string name="app_direct_launch_warning">There\'s no need to launch this app manually!\n\n
+		Just use \'Navigate -> Android Wear\' from a cache listing in c:geo.</string>
 
-	<string name="description_compass">Compass</string>
-
-	<string name="app_direct_launch_warning">
-		There\'s no need to launch this app manually!\n\n
-		Just use \'Navigate -> Android Wear\' from a cache listing in c:geo.
-	</string>
+	<!-- Ongoing Notification Text -->
+	<string name="notification1_body">Navigating - Swipe left for options</string>
+	<string name="notification2_label">Show Compass</string>
+	<string name="notification3_label">Stop Navigating</string>
 
 </resources>

@@ -28,13 +28,8 @@ public class MessageDataSet {
 	public static final String KEY_DISTANCE = "distance";
 	public static final String KEY_DIRECTION = "direction";
 
-	public static final String KEY_CACHE_LOCATION = "cacheLocation";
-	public static final String KEY_CACHE_LATITUDE = "cacheLatitude";
-	public static final String KEY_CACHE_LONGITUDE = "cacheLongitude";
-
 	private final String cacheName, geocode;
 	private final float distance, direction;
-	private Location cacheLocation;
 
 	/**
 	 * Do not call directly, use MessageDataSet.Builder to obtain a new instance.
@@ -58,11 +53,6 @@ public class MessageDataSet {
 				map.getFloat(KEY_DISTANCE),
 				map.getFloat(KEY_DIRECTION)
 		);
-
-		Location cacheLoc = new Location("phoneApp");
-		cacheLoc.setLatitude(map.getDouble(KEY_CACHE_LATITUDE, 0d));
-		cacheLoc.setLongitude(map.getDouble(KEY_CACHE_LONGITUDE, 0d));
-		setCacheLocation(cacheLoc);
 	}
 
 	public String getCacheName() {
@@ -79,13 +69,5 @@ public class MessageDataSet {
 
 	public float getDirection() {
 		return direction;
-	}
-
-	public Location getCacheLocation() {
-		return cacheLocation;
-	}
-
-	private void setCacheLocation(Location loc) {
-		cacheLocation = loc;
 	}
 }

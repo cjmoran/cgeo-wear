@@ -17,6 +17,7 @@ package com.javadog.cgeowear;
 
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.content.WakefulBroadcastReceiver;
 
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.MessageEvent;
@@ -40,23 +41,21 @@ public class ListenerService extends WearableListenerService {
 	@Override
 	public void onMessageReceived(MessageEvent messageEvent) {
 
-		//Init action
+		//Init: Service should start listening for updates from phone, and the main activity should be launched
 		if(PATH_INIT.equals(messageEvent.getPath())) {
 			//Get dataset from the message
 			MessageDataSet dataSet = new MessageDataSet(DataMap.fromByteArray(messageEvent.getData()));
 
-			//Start the main Activity
-			Intent i = new Intent(this, cgeoWear.class);
+			//Start the service
+			Intent i = new Intent(this, cgeoWearService.class);
 			i.setAction(PATH_INIT);
-			i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 			i.putExtra(MessageDataSet.KEY_CACHE_NAME, dataSet.getCacheName());
 			i.putExtra(MessageDataSet.KEY_GEOCODE, dataSet.getGeocode());
 			i.putExtra(MessageDataSet.KEY_DISTANCE, dataSet.getDistance());
 			i.putExtra(MessageDataSet.KEY_DIRECTION, dataSet.getDirection());
-			i.putExtra(MessageDataSet.KEY_CACHE_LOCATION, dataSet.getCacheLocation());
-			startActivity(i);
+			WakefulBroadcastReceiver.startWakefulService(getApplicationContext(), i);
 
-			//Update distance action
+			//Distance update
 		} else if(PATH_UPDATE_DISTANCE.equals(messageEvent.getPath())) {
 			MessageDataSet dataSet = new MessageDataSet(DataMap.fromByteArray(messageEvent.getData()));
 
@@ -65,7 +64,7 @@ public class ListenerService extends WearableListenerService {
 
 			LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(updateIntent);
 
-			//Update direction action
+			//Direction update
 		} else if(PATH_UPDATE_DIRECTION.equals(messageEvent.getPath())) {
 			MessageDataSet dataSet = new MessageDataSet(DataMap.fromByteArray(messageEvent.getData()));
 
