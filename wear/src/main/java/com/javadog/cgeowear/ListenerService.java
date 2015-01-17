@@ -22,6 +22,7 @@ import android.support.v4.content.WakefulBroadcastReceiver;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
+import com.javadog.WearMessageDataset.MessageDataset;
 
 /**
  * Watch-side service which listens for messages from the phone app.
@@ -44,32 +45,32 @@ public class ListenerService extends WearableListenerService {
 		//Init: Service should start listening for updates from phone, and the main activity should be launched
 		if(PATH_INIT.equals(messageEvent.getPath())) {
 			//Get dataset from the message
-			MessageDataSet dataSet = new MessageDataSet(DataMap.fromByteArray(messageEvent.getData()));
+			MessageDataset dataSet = new MessageDataset(DataMap.fromByteArray(messageEvent.getData()));
 
 			//Start the service
 			Intent i = new Intent(this, cgeoWearService.class);
 			i.setAction(PATH_INIT);
-			i.putExtra(MessageDataSet.KEY_CACHE_NAME, dataSet.getCacheName());
-			i.putExtra(MessageDataSet.KEY_GEOCODE, dataSet.getGeocode());
-			i.putExtra(MessageDataSet.KEY_DISTANCE, dataSet.getDistance());
-			i.putExtra(MessageDataSet.KEY_DIRECTION, dataSet.getDirection());
+			i.putExtra(MessageDataset.KEY_CACHE_NAME, dataSet.getCacheName());
+			i.putExtra(MessageDataset.KEY_GEOCODE, dataSet.getGeocode());
+			i.putExtra(MessageDataset.KEY_DISTANCE, dataSet.getDistance());
+			i.putExtra(MessageDataset.KEY_DIRECTION, dataSet.getDirection());
 			WakefulBroadcastReceiver.startWakefulService(getApplicationContext(), i);
 
 			//Distance update
 		} else if(PATH_UPDATE_DISTANCE.equals(messageEvent.getPath())) {
-			MessageDataSet dataSet = new MessageDataSet(DataMap.fromByteArray(messageEvent.getData()));
+			MessageDataset dataSet = new MessageDataset(DataMap.fromByteArray(messageEvent.getData()));
 
 			Intent updateIntent = new Intent(PATH_UPDATE_DISTANCE);
-			updateIntent.putExtra(MessageDataSet.KEY_DISTANCE, dataSet.getDistance());
+			updateIntent.putExtra(MessageDataset.KEY_DISTANCE, dataSet.getDistance());
 
 			LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(updateIntent);
 
 			//Direction update
 		} else if(PATH_UPDATE_DIRECTION.equals(messageEvent.getPath())) {
-			MessageDataSet dataSet = new MessageDataSet(DataMap.fromByteArray(messageEvent.getData()));
+			MessageDataset dataSet = new MessageDataset(DataMap.fromByteArray(messageEvent.getData()));
 
 			Intent updateIntent = new Intent(PATH_UPDATE_DIRECTION);
-			updateIntent.putExtra(MessageDataSet.KEY_DIRECTION, dataSet.getDirection());
+			updateIntent.putExtra(MessageDataset.KEY_DIRECTION, dataSet.getDirection());
 
 			LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(updateIntent);
 

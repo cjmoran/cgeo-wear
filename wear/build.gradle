@@ -25,4 +25,7 @@ dependencies {
     compile 'com.google.android.support:wearable:+'
     //noinspection GradleDynamicVersion
     compile 'com.google.android.gms:play-services-wearable:+'
+    compile(project(':wearmessagedataset')) {
+        exclude group:'com.google.android.gms', module:'play-services'
+    }
 }

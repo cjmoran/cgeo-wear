@@ -35,6 +35,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
+import com.javadog.WearMessageDataset.MessageDataset;
 
 import java.util.HashSet;
 import java.util.NoSuchElementException;
@@ -118,10 +119,10 @@ public class cgeoWearService extends Service
 	 * {@link com.javadog.cgeowear.cgeoWearService#onStartCommand(android.content.Intent, int, int)}
 	 */
 	private void initLocalVars(final Intent startIntent) {
-		cacheName = startIntent.getStringExtra(MessageDataSet.KEY_CACHE_NAME);
-		geocode = startIntent.getStringExtra(MessageDataSet.KEY_GEOCODE);
-		distance = startIntent.getFloatExtra(MessageDataSet.KEY_DISTANCE, 0f);
-		direction = startIntent.getFloatExtra(MessageDataSet.KEY_DIRECTION, 0f);
+		cacheName = startIntent.getStringExtra(MessageDataset.KEY_CACHE_NAME);
+		geocode = startIntent.getStringExtra(MessageDataset.KEY_GEOCODE);
+		distance = startIntent.getFloatExtra(MessageDataset.KEY_DISTANCE, 0f);
+		direction = startIntent.getFloatExtra(MessageDataset.KEY_DIRECTION, 0f);
 	}
 
 	/**
@@ -134,12 +135,12 @@ public class cgeoWearService extends Service
 
 			//Distance update received
 			if(ListenerService.PATH_UPDATE_DISTANCE.equals(intent.getAction())) {
-				distance = intent.getFloatExtra(MessageDataSet.KEY_DISTANCE, 0f);
+				distance = intent.getFloatExtra(MessageDataset.KEY_DISTANCE, 0f);
 				triggerMinimalUiRefresh();
 
 				//Direction update received
 			} else if(ListenerService.PATH_UPDATE_DIRECTION.equals(intent.getAction())) {
-				direction = intent.getFloatExtra(MessageDataSet.KEY_DIRECTION, 0f);
+				direction = intent.getFloatExtra(MessageDataset.KEY_DIRECTION, 0f);
 				triggerMinimalUiRefresh();
 
 				//Kill app

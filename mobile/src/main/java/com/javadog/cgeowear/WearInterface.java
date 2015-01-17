@@ -21,6 +21,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Wearable;
+import com.javadog.WearMessageDataset.MessageDataset;
 
 import java.net.ConnectException;
 
@@ -55,7 +56,7 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 	 */
 	public void initTracking(String cacheName, String geocode, float distance, float direction)
 			throws ConnectException {
-		MessageDataSet dataSet = new MessageDataSet.Builder()
+		MessageDataset dataSet = new MessageDataset.Builder()
 				.cacheName(cacheName)
 				.geocode(geocode)
 				.distance(distance)
@@ -72,7 +73,7 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 	}
 
 	public void sendDistanceUpdate(float distance) {
-		MessageDataSet dataSet = new MessageDataSet.Builder()
+		MessageDataset dataSet = new MessageDataset.Builder()
 				.distance(distance)
 				.build();
 
@@ -81,7 +82,7 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 	}
 
 	public void sendDirectionUpdate(float direction) {
-		MessageDataSet dataSet = new MessageDataSet.Builder()
+		MessageDataset dataSet = new MessageDataset.Builder()
 				.direction(direction)
 				.build();
 
