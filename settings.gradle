@@ -1,1 +1,1 @@
-include ':mobile', ':wear', ':wearmessagedataset'
+include ':mobile', ':wear', ':wearmessagedataset', ':locationUtils'

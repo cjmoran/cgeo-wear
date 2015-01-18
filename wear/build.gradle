@@ -8,8 +8,8 @@ android {
         applicationId "com.javadog.cgeowear"
         minSdkVersion 20
         targetSdkVersion 21
-        versionCode 4
-        versionName "2.0.0"
+        versionCode 5
+        versionName "2.1.0"
     }
     buildTypes {
         release {
@@ -20,12 +20,14 @@ android {
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    //noinspection GradleDynamicVersion
     compile 'com.google.android.support:wearable:+'
-    //noinspection GradleDynamicVersion
-    compile 'com.google.android.gms:play-services-wearable:+'
+    compile 'com.google.android.gms:play-services-wearable:6.5.+'
+
+    compile(project(':locationUtils')) {
+        exclude group: 'com.google.android.gms', module: 'play-services-location'
+    }
+
     compile(project(':wearmessagedataset')) {
-        exclude group:'com.google.android.gms', module:'play-services'
+        exclude group: 'com.google.android.gms', module: 'play-services-wearable'
     }
 }

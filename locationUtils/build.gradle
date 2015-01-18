@@ -10,8 +10,13 @@ android {
         versionCode 1
         versionName "1.0.0"
     }
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
 }
 
 dependencies {
-    compile 'com.google.android.gms:play-services-wearable:6.5.+'
+    compile 'com.google.android.gms:play-services-location:6.5.+'
 }

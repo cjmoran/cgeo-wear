@@ -22,11 +22,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.hardware.GeomagneticField;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
@@ -40,55 +35,42 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
+import com.javadog.LocationUtils.LocationUtils;
 
 import java.net.ConnectException;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 
-public class WearService extends Service
-		implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
-		SensorEventListener {
+public class MobileService extends Service
+		implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 	public static final String DEBUG_TAG = "com.javadog.cgeowear";
 
 	private static final String INTENT_INIT = "cgeo.geocaching.wear.NAVIGATE_TO";
 	private static final String INTENT_STOP = "com.javadog.cgeowear.STOP_APP";
 
-	//Location update speed (preferred and max, respectively) in milliseconds
-	private static final long LOCATION_UPDATE_INTERVAL = 2000;
-	private static final long LOCATION_UPDATE_MAX_INTERVAL = 1000;
+	private static final String MESSAGE_NAVIGATING_NOW = "Navigating on Android Wear";
+	private static final String MESSAGE_NO_WEAR_DEVICE = "No Android Wear device paired!";
+	private static final String MESSAGE_ERROR_COMMUNICATING = "Error communicating with Wear device. Contact support.";
 
-	//App will smooth out compass samples and send the result every n milliseconds
-	private static final long DIRECTION_UPDATE_SPEED = 2000;
-
-	private LocationRequest locationRequest;
-
+	/**
+	 * Constants from c:geo's Android Wear API that I wrote.
+	 */
 	private static final String PREFIX = "cgeo.geocaching.intent.extra.";
 	private static final String EXTRA_CACHE_NAME = PREFIX + "name";
 	private static final String EXTRA_GEOCODE = PREFIX + "geocode";
 	private static final String EXTRA_LATITUDE = PREFIX + "latitude";
 	private static final String EXTRA_LONGITUDE = PREFIX + "longitude";
 
-	private static final String MESSAGE_NAVIGATING_NOW = "Navigating on Android Wear";
-	private static final String MESSAGE_NO_WEAR_DEVICE = "No Android Wear device paired!";
-	private static final String MESSAGE_ERROR_COMMUNICATING = "Error communicating with Wear device. Contact support.";
-
 	private GoogleApiClient apiClient;
 	private WearInterface wearInterface;
-
-	private SensorManager sensorManager;
-	private Sensor accelerometer;
-	private Sensor magnetometer;
+	private LocationUtils locationUtils;
 
 	private String cacheName;
 	private String geocode;
-	private Location geocacheLocation;
-	private Location currentLocation;
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
@@ -100,37 +82,54 @@ public class WearService extends Service
 
 				final double latitude = intent.getDoubleExtra(EXTRA_LATITUDE, 0d);
 				final double longitude = intent.getDoubleExtra(EXTRA_LONGITUDE, 0d);
-				geocacheLocation = new Location("c:geo");
+				final Location geocacheLocation = new Location("c:geo");
 				geocacheLocation.setLatitude(latitude);
 				geocacheLocation.setLongitude(longitude);
+				setupLocationUtils(geocacheLocation);
 
-				//Connect to Google APIs
-				if(apiClient != null) {
-					apiClient.unregisterConnectionCallbacks(this);
-					apiClient.unregisterConnectionFailedListener(this);
-					apiClient.disconnect();
-				}
-				apiClient = new GoogleApiClient.Builder(this, this, this)
-						.addApi(Wearable.API)
-						.addApi(LocationServices.API)
-						.build();
-				apiClient.connect();
+				connectGoogleApiClient();
 			}
 		}
-
 		return START_STICKY;
+	}
+
+	private void setupLocationUtils(Location geocacheLocation) {
+		if(locationUtils != null) {
+			locationUtils.stopListeningForUpdates();
+		}
+
+		locationUtils = new LocationUtils(getApplicationContext(), geocacheLocation);
+
+		locationUtils.setOnLocationUpdateListener(new LocationUtils.OnLocationUpdateListener() {
+			@Override
+			public void onDistanceUpdate(float newDistance) {
+				wearInterface.sendDistanceUpdate(newDistance);
+			}
+
+			@Override
+			public void onDirectionUpdate(float newDirection) {
+				wearInterface.sendDirectionUpdate(newDirection);
+			}
+		});
+	}
+
+	private void connectGoogleApiClient() {
+		if(apiClient != null) {
+			apiClient.unregisterConnectionCallbacks(this);
+			apiClient.unregisterConnectionFailedListener(this);
+			apiClient.disconnect();
+		}
+		apiClient = new GoogleApiClient.Builder(this, this, this)
+				.addApi(Wearable.API)
+				.addApi(LocationServices.API)
+				.build();
+		apiClient.connect();
 	}
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		handleInit();
-	}
 
-	/**
-	 * Starts service & watch app.
-	 */
-	private void handleInit() {
 		//Register listener for INTENT_STOP events
 		IntentFilter filter = new IntentFilter(INTENT_STOP);
 		registerReceiver(intentReceiver, filter);
@@ -149,19 +148,6 @@ public class WearService extends Service
 				.setContentTitle(getText(R.string.app_name))
 				.setContentText(getText(R.string.notification_text))
 				.build();
-
-		//Specify how quickly we want to receive location updates
-		locationRequest = LocationRequest.create()
-				.setInterval(LOCATION_UPDATE_INTERVAL)
-				.setFastestInterval(LOCATION_UPDATE_MAX_INTERVAL)
-				.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-		//Listen for updates from the phone compass
-		sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-		accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-		magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-		sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-		sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
 
 		//Start service in foreground
 		startForeground(R.string.app_name, notification);
@@ -204,9 +190,7 @@ public class WearService extends Service
 		//Stop listeners
 		unregisterReceiver(intentReceiver);
 		LocalBroadcastManager.getInstance(this).unregisterReceiver(localReceiver);
-
-		sensorManager.unregisterListener(this, accelerometer);
-		sensorManager.unregisterListener(this, magnetometer);
+		locationUtils.stopListeningForUpdates();
 
 		super.onDestroy();
 	}
@@ -238,8 +222,7 @@ public class WearService extends Service
 	public void onConnected(Bundle bundle) {
 		Log.d(DEBUG_TAG, "Connected to Play Services");
 
-		//Subscribe to location updates
-		LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, locationListener);
+		locationUtils.startListeningForUpdates(apiClient);
 
 		//Get ID of connected Wear device and send it the initial cache info (in another thread)
 		new Thread(new Runnable() {
@@ -282,107 +265,8 @@ public class WearService extends Service
 		Log.e(DEBUG_TAG, "Failed to connect to Google Play Services.");
 	}
 
-	private LocationListener locationListener = new LocationListener() {
-		@Override
-		public void onLocationChanged(Location location) {
-			//Update stored currentLocation
-			currentLocation = location;
-
-			//Calculate new distance (meters) to geocache
-			float distance = currentLocation.distanceTo(geocacheLocation);
-
-			//Send these values off to Android Wear
-			wearInterface.sendDistanceUpdate(distance);
-		}
-	};
-
 	@Override
 	public IBinder onBind(Intent intent) {
 		return null;
-	}
-
-	float[] gravity;
-	float[] geomagnetic;
-	float oldDirection = 0, oldLatitude = 0, oldLongitude = 0, oldAltitude = 0;
-	long prevTime = System.currentTimeMillis();
-
-	/**
-	 * Handles compass rotation.
-	 */
-	@Override
-	public void onSensorChanged(SensorEvent event) {
-		if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-			gravity = event.values.clone();
-		} else if(event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-			geomagnetic = event.values.clone();
-		}
-
-		if(gravity != null && geomagnetic != null) {
-			float[] R = new float[9];
-			float[] I = new float[9];
-
-			boolean success = SensorManager.getRotationMatrix(R, I, gravity, geomagnetic);
-			if(success) {
-				float[] orientation = new float[3];
-				SensorManager.getOrientation(R, orientation);
-				float azimuth = (float) Math.toDegrees(orientation[0]);
-				float pitch = (float) Math.toDegrees(orientation[1]);
-
-				if(currentLocation != null) {
-					float smoothedLatitude = smoothSensorValues(
-							oldLatitude, (float) currentLocation.getLatitude(), 1 / 3f);
-					float smoothedLongitude = smoothSensorValues(
-							oldLongitude, (float) currentLocation.getLongitude(), 1 / 3f);
-					float smoothedAltitude = smoothSensorValues(
-							oldAltitude, (float) currentLocation.getAltitude(), 1 / 3f);
-
-					GeomagneticField geomagneticField = new GeomagneticField(
-							smoothedLatitude,
-							smoothedLongitude,
-							smoothedAltitude,
-							System.currentTimeMillis()
-					);
-					azimuth += geomagneticField.getDeclination();
-
-					float bearing = currentLocation.bearingTo(geocacheLocation);
-
-					float direction = smoothSensorValues(oldDirection, -(azimuth - bearing), 1 / 5f);
-
-					//If the user puts the phone in his/her pocket upside-down, invert the compass
-					if(pitch > 0) {
-						direction += 180f;
-					}
-
-					//Set old values to current values (for smoothing)
-					oldDirection = direction;
-					oldLatitude = smoothedLatitude;
-					oldLongitude = smoothedLongitude;
-					oldAltitude = smoothedAltitude;
-
-					//Send direction update to Android Wear if update interval has passed
-					long currentTime = System.currentTimeMillis();
-					if((currentTime - prevTime) > DIRECTION_UPDATE_SPEED) {
-						wearInterface.sendDirectionUpdate(direction);
-						prevTime = currentTime;
-					}
-				}
-			}
-		}
-	}
-
-	/**
-	 * A low-pass filter for smoothing out noisy sensor values.
-	 *
-	 * @param oldVal      The previous value.
-	 * @param newVal      The new value.
-	 * @param decayFactor Decay factor. (1 / decayFactor) = number of samples to smooth over.
-	 * @return The smoothed value.
-	 */
-	private float smoothSensorValues(float oldVal, float newVal, float decayFactor) {
-		return oldVal * (1 - decayFactor) + newVal * decayFactor;
-	}
-
-	@Override
-	public void onAccuracyChanged(Sensor sensor, int accuracy) {
 	}
 }

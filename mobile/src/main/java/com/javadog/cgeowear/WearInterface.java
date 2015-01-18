@@ -66,7 +66,7 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 		MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
 				apiClient, nodeId, PATH_INIT, dataSet.putToDataMap().toByteArray()).await();
 		if(result.getStatus().isSuccess()) {
-			Log.d(WearService.DEBUG_TAG, "Successfully sent message to Wear device: " + nodeId);
+			Log.d(MobileService.DEBUG_TAG, "Successfully sent message to Wear device: " + nodeId);
 		} else {
 			throw new ConnectException("Could not send message to Wear device: " + nodeId);
 		}
@@ -99,7 +99,7 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 	@Override
 	public void onResult(MessageApi.SendMessageResult sendMessageResult) {
 		if(!sendMessageResult.getStatus().isSuccess()) {
-			Log.e(WearService.DEBUG_TAG, "Failed to send location update to Wear device.");
+			Log.e(MobileService.DEBUG_TAG, "Failed to send location update to Wear device.");
 		}
 	}
 }
