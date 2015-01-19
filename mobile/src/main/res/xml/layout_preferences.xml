@@ -8,7 +8,14 @@
 		android:summary="@string/link_usage_guide_summary">
 		<intent
 			android:action="android.intent.action.VIEW"
-			android:data="https://github.com/culmor30/cgeo-wear/wiki/Usage-Guide"/>
+			android:data="https://github.com/culmor30/cgeo-wear/wiki/Usage-Guide" />
 	</Preference>
+
+	<CheckBoxPreference
+		android:title="@string/watch_compass_pref"
+	    android:summaryOn="@string/watch_compass_pref_enabled"
+	    android:summaryOff="@string/watch_compass_pref_disabled"
+		android:key="useWatchCompass"
+		android:defaultValue="true" />
 
 </PreferenceScreen>

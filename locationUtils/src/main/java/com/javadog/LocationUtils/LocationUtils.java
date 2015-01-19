@@ -43,20 +43,25 @@ public class LocationUtils implements SensorEventListener {
 	private SensorManager sensorManager;
 	private Sensor accelerometer;
 	private Sensor magnetometer;
-	private LocationRequest locationRequest;
 
-	private OnLocationUpdateListener onLocationUpdateListener;
+	private OnDistanceUpdateListener onDistanceUpdateListener;
+	private OnDirectionUpdateListener onDirectionUpdateListener;
 
-	public LocationUtils(Context applicationContext, final Location cacheLocation) {
+	/**
+	 * @param distanceListener   Implementation of
+	 *                           {@link com.javadog.LocationUtils.LocationUtils.OnDistanceUpdateListener}
+	 * @param directionListener  Implementation of
+	 *                           {@link com.javadog.LocationUtils.LocationUtils.OnDirectionUpdateListener}
+	 */
+	public LocationUtils(Location cacheLocation,
+						 OnDistanceUpdateListener distanceListener, OnDirectionUpdateListener directionListener) {
+
 		geocacheLocation = cacheLocation;
+		setOnDistanceUpdateListener(distanceListener);
+		setOnDirectionUpdateListener(directionListener);
+	}
 
-		//Specify how quickly we want to receive location updates
-		locationRequest = LocationRequest.create()
-				.setInterval(LOCATION_UPDATE_INTERVAL)
-				.setFastestInterval(LOCATION_UPDATE_MAX_INTERVAL)
-				.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-		//Listen for updates from the phone compass
+	public void startDirectionalTracking(Context applicationContext) throws UnsupportedOperationException {
 		sensorManager = (SensorManager) applicationContext.getSystemService(Context.SENSOR_SERVICE);
 		accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 		magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
@@ -64,11 +69,24 @@ public class LocationUtils implements SensorEventListener {
 		sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
 	}
 
+	public void startLocationTracking(GoogleApiClient apiClient) {
+		//Specify how quickly we want to receive location updates
+		LocationRequest locationRequest = LocationRequest.create()
+				.setInterval(LOCATION_UPDATE_INTERVAL)
+				.setFastestInterval(LOCATION_UPDATE_MAX_INTERVAL)
+				.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+		LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, locationListener);
+	}
+
 	private float[] gravity;
 	private float[] geomagnetic;
 	private float oldDirection = 0, oldLatitude = 0, oldLongitude = 0, oldAltitude = 0;
 	private long prevTime = System.currentTimeMillis();
 
+	/**
+	 * Handles compass rotation.
+	 */
 	@Override
 	public final void onSensorChanged(SensorEvent event) {
 		if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
@@ -122,7 +140,7 @@ public class LocationUtils implements SensorEventListener {
 					//Send direction update to Android Wear if update interval has passed
 					long currentTime = System.currentTimeMillis();
 					if((currentTime - prevTime) > COMPASS_UPDATE_INTERVAL) {
-						onLocationUpdateListener.onDirectionUpdate(direction);
+						onDirectionUpdateListener.onDirectionUpdate(direction);
 						prevTime = currentTime;
 					}
 				}
@@ -135,10 +153,12 @@ public class LocationUtils implements SensorEventListener {
 	}
 
 	/**
-	 * Interface for instantiating class to receive distance and direction updates.
+	 * Interfaces for instantiating class to receive distance and direction updates.
 	 */
-	public interface OnLocationUpdateListener {
+	public interface OnDistanceUpdateListener {
 		public void onDistanceUpdate(float newDistance);
+	}
+	public interface OnDirectionUpdateListener {
 		public void onDirectionUpdate(float newDirection);
 	}
 
@@ -152,22 +172,18 @@ public class LocationUtils implements SensorEventListener {
 			float distance = currentLocation.distanceTo(geocacheLocation);
 
 			//Pass new distance to listener
-			onLocationUpdateListener.onDistanceUpdate(distance);
+			onDistanceUpdateListener.onDistanceUpdate(distance);
 		}
 	};
 
 	/**
-	 * @param onLocationUpdateListener Client's implementation of
+	 * @param onDistanceUpdateListener References to client's implementations of stub methods
 	 */
-	public void setOnLocationUpdateListener(OnLocationUpdateListener onLocationUpdateListener) {
-		this.onLocationUpdateListener = onLocationUpdateListener;
+	public void setOnDistanceUpdateListener(OnDistanceUpdateListener onDistanceUpdateListener) {
+		this.onDistanceUpdateListener = onDistanceUpdateListener;
 	}
-
-	/**
-	 * Tells the LocationUtils object to start requesting updates from LocationServices.
-	 */
-	public final void startListeningForUpdates(GoogleApiClient apiClient) {
-		LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, locationListener);
+	public void setOnDirectionUpdateListener(OnDirectionUpdateListener onDirectionUpdateListener) {
+		this.onDirectionUpdateListener = onDirectionUpdateListener;
 	}
 
 	/**
@@ -186,7 +202,7 @@ public class LocationUtils implements SensorEventListener {
 	 * @param decayFactor Decay factor. (1 / decayFactor) = number of samples to smooth over.
 	 * @return The smoothed value.
 	 */
-	private final float smoothSensorValues(float oldVal, float newVal, float decayFactor) {
+	private float smoothSensorValues(float oldVal, float newVal, float decayFactor) {
 		return oldVal * (1 - decayFactor) + newVal * decayFactor;
 	}
 }
