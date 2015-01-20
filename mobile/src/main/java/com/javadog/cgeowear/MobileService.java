@@ -94,7 +94,7 @@ public class MobileService extends Service
 
 				SharedPreferences userPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 				useWatchCompass = userPrefs.getBoolean(MessageDataset.KEY_WATCH_COMPASS, true);
-				setupLocationUtils(geocacheLocation, useWatchCompass);
+				setupLocationUtils(geocacheLocation);
 
 				connectGoogleApiClient();
 			}
@@ -102,30 +102,43 @@ public class MobileService extends Service
 		return START_STICKY;
 	}
 
-	private void setupLocationUtils(Location geocacheLocation, boolean useWatchCompassPref) {
+	private void setupLocationUtils(Location geocacheLocation) {
 		if(locationUtils != null) {
 			locationUtils.stopListeningForUpdates();
 		}
 
-		locationUtils = new LocationUtils(geocacheLocation,
+		locationUtils = new LocationUtils(
+				geocacheLocation,
 
 				new LocationUtils.OnDistanceUpdateListener() {
 					@Override
 					public void onDistanceUpdate(float newDistance) {
-						wearInterface.sendDistanceUpdate(newDistance);
+						if(wearInterface != null) {
+							wearInterface.sendDistanceUpdate(newDistance);
+						}
 					}
 				},
 
-				// Don't set up a listener for direction updates here if user wants to use watch compass;
+				// Don't set up listener for direction updates here if user wants to use watch compass;
 				// that will be calculated watch-side.
-				(useWatchCompassPref ?
+				(useWatchCompass ?
 						null :
 						new LocationUtils.OnDirectionUpdateListener() {
 							@Override
 							public void onDirectionUpdate(float newDirection) {
 								wearInterface.sendDirectionUpdate(newDirection);
 							}
-						}));
+						}),
+
+				// Only need this when using watch compass mode
+				(useWatchCompass ?
+						new LocationUtils.OnLocationUpdateListener() {
+							@Override
+							public void onLocationUpdate(Location newLocation) {
+								wearInterface.sendLocationUpdate(newLocation);
+							}
+						} :
+						null));
 	}
 
 	private void connectGoogleApiClient() {
@@ -145,7 +158,7 @@ public class MobileService extends Service
 	public void onCreate() {
 		super.onCreate();
 
-		//Register listener for INTENT_STOP events
+		//Register listener for INTENT_STOP events (from persistent notification)
 		IntentFilter filter = new IntentFilter(INTENT_STOP);
 		registerReceiver(intentReceiver, filter);
 

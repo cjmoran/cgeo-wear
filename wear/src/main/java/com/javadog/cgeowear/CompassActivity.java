@@ -51,7 +51,7 @@ public class CompassActivity extends Activity {
 	private TextView tv_distance;
 	private ImageView iv_compass;
 
-	private float currentCompassDirection;
+	private float currentRotation;
 
 	private LocalBroadcastManager localBroadcastManager;
 
@@ -68,9 +68,10 @@ public class CompassActivity extends Activity {
 		super.onStart();
 		final Intent launchIntent = getIntent();
 
+		getUiReferences();
+
 		final boolean properLaunch = verifyLaunchAction(launchIntent.getAction());
 		if(properLaunch) {
-			getUiReferences();
 			bindToService();
 			listenForUpdates();
 		}
@@ -126,9 +127,8 @@ public class CompassActivity extends Activity {
 	}
 
 	private void unbindFromService() {
-		if(serviceBound) {
+		if(serviceConnection != null && service != null) {
 			unbindService(serviceConnection);
-			serviceBound = false;
 		}
 	}
 
@@ -172,23 +172,39 @@ public class CompassActivity extends Activity {
 		tv_distance.setText(format.format(dist));
 	}
 
+	float newRot = 0;
 	/**
 	 * Handles rotation of the compass to a new direction.
 	 *
-	 * @param newDirection Direction to turn to, in degrees.
+	 * @param newDirectionRaw Direction to turn to, in degrees.
 	 */
-	private void rotateCompass(final float newDirection) {
-		if(currentCompassDirection != newDirection) {
+	private void rotateCompass(final float newDirectionRaw) {
+
+		//Rotate through smallest angle
+		float apparent;
+		apparent = newRot % 360;
+		if(apparent < 0) {
+			apparent += 360;
+		}
+		if(apparent < 180 && (newDirectionRaw > (apparent + 180)) ) {
+			newRot -= 360;
+		}
+		if(apparent >= 180 && (newDirectionRaw <= (apparent - 180)) ) {
+			newRot += 360;
+		}
+		newRot += (newDirectionRaw - apparent);
+
+		if(currentRotation != newDirectionRaw) {
 			RotateAnimation anim = new RotateAnimation(
-					currentCompassDirection,
-					newDirection,
+					currentRotation,
+					newRot,
 					Animation.RELATIVE_TO_SELF, 0.5f,
 					Animation.RELATIVE_TO_SELF, 0.5f);
 			anim.setDuration(200l);
 			anim.setFillAfter(true);
 			iv_compass.startAnimation(anim);
 
-			currentCompassDirection = newDirection;
+			currentRotation = newRot;
 		}
 	}
 

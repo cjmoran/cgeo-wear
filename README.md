@@ -7,9 +7,9 @@ Features:
 
 - [x] User can navigate to geocaches using a compass displayed on their watch.
 - [x] App launches in the background when triggered, without exiting c:geo.
+- [x] Support for watch compasses.
 
 Planned Features:
 
 - [ ] Allow user to view more information from c:geo such as static maps, previous cache logs, cache hints, etc.
-- [ ] Fully implement support for watch compasses (currently not possible due to Android Wear SDK problems).
 - [ ] Let user view map of the geocache location, including user's current position (not possible yet).

@@ -22,6 +22,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.BitmapFactory;
+import android.location.Location;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -35,6 +36,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
+import com.javadog.LocationUtils.LocationUtils;
 import com.javadog.WearMessageDataset.MessageDataset;
 
 import java.util.HashSet;
@@ -56,9 +58,13 @@ public class cgeoWearService extends Service
 
 	private String cacheName, geocode;
 	private float distance, direction;
+	private boolean useWatchCompass;
+
+	private Location cacheLocation;
 
 	private GoogleApiClient apiClient;
 	private String connectedNodeId;
+	private LocationUtils locationUtils;
 
 	private LocalBroadcastManager localBroadcastManager;
 
@@ -69,6 +75,11 @@ public class cgeoWearService extends Service
 		showOngoingNotification();
 		listenForUpdates();
 		startCompassActivity();
+
+		if(useWatchCompass) {
+			setupLocationUtils(cacheLocation);
+			locationUtils.startDirectionalTracking(getApplicationContext());
+		}
 
 		WakefulBroadcastReceiver.completeWakefulIntent(intent);
 
@@ -105,6 +116,24 @@ public class cgeoWearService extends Service
 		startForeground(NOTIFICATION_ID, notificationBuilder.build());
 	}
 
+	private void setupLocationUtils(Location geocacheLocation) {
+		if(locationUtils != null) {
+			locationUtils.stopListeningForUpdates();
+		}
+
+		locationUtils = new LocationUtils(
+				geocacheLocation,
+				null, // (all location tracking is phone-side for now)
+				new LocationUtils.OnDirectionUpdateListener() {
+					@Override
+					public void onDirectionUpdate(float newDirection) {
+						direction = newDirection;
+						triggerMinimalUiRefresh();
+					}
+				},
+				null);
+	}
+
 	private void connectGoogleApiClient() {
 		apiClient = new GoogleApiClient.Builder(this, this, this)
 				.addApi(Wearable.API)
@@ -123,6 +152,14 @@ public class cgeoWearService extends Service
 		geocode = startIntent.getStringExtra(MessageDataset.KEY_GEOCODE);
 		distance = startIntent.getFloatExtra(MessageDataset.KEY_DISTANCE, 0f);
 		direction = startIntent.getFloatExtra(MessageDataset.KEY_DIRECTION, 0f);
+		useWatchCompass = startIntent.getBooleanExtra(MessageDataset.KEY_WATCH_COMPASS, true);
+
+		if(useWatchCompass) {
+			Location cacheLoc = new Location("phoneApp");
+			cacheLoc.setLatitude(startIntent.getFloatExtra(MessageDataset.KEY_CACHE_LATITUDE, 0f));
+			cacheLoc.setLongitude(startIntent.getFloatExtra(MessageDataset.KEY_CACHE_LONGITUDE, 0f));
+			cacheLocation = cacheLoc;
+		}
 	}
 
 	/**
@@ -138,10 +175,14 @@ public class cgeoWearService extends Service
 				distance = intent.getFloatExtra(MessageDataset.KEY_DISTANCE, 0f);
 				triggerMinimalUiRefresh();
 
-				//Direction update received
-			} else if(ListenerService.PATH_UPDATE_DIRECTION.equals(intent.getAction())) {
+				//Direction update received (ignore if using watch compass)
+			} else if(!useWatchCompass && ListenerService.PATH_UPDATE_DIRECTION.equals(intent.getAction())) {
 				direction = intent.getFloatExtra(MessageDataset.KEY_DIRECTION, 0f);
 				triggerMinimalUiRefresh();
+
+				//User location update received (ignore unless using watch compass)
+			} else if(useWatchCompass && ListenerService.PATH_UPDATE_LOCATION.equals(intent.getAction())) {
+				locationUtils.setCurrentLocation((Location) intent.getParcelableExtra(MessageDataset.KEY_LOCATION));
 
 				//Kill app
 			} else if(ListenerService.PATH_KILL_APP.equals(intent.getAction())) {

@@ -33,6 +33,7 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 	public static final String PATH_INIT = "/cgeoWear/init";
 	public static final String PATH_UPDATE_DISTANCE = "/cgeoWear/update/distance";
 	public static final String PATH_UPDATE_DIRECTION = "/cgeoWear/update/direction";
+	public static final String PATH_UPDATE_LOCATION = "/cgeoWear/update/location";
 	public static final String PATH_KILL_APP = "/cgeoWear/killApp";
 
 	private GoogleApiClient apiClient;
@@ -99,6 +100,15 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 
 		Wearable.MessageApi.sendMessage(
 				apiClient, nodeId, PATH_UPDATE_DIRECTION, dataSet.putToDataMap().toByteArray()).setResultCallback(this);
+	}
+
+	public void sendLocationUpdate(Location location) {
+		MessageDataset dataSet = new MessageDataset.Builder()
+				.location(location)
+				.build();
+
+		Wearable.MessageApi.sendMessage(
+				apiClient, nodeId, PATH_UPDATE_LOCATION, dataSet.putToDataMap().toByteArray()).setResultCallback(this);
 	}
 
 	public void sendKillRequest() {

@@ -27,12 +27,14 @@ public class MessageDataset {
 	public static final String KEY_GEOCODE = "geocode";
 	public static final String KEY_WATCH_COMPASS = "useWatchCompass";
 
+	public static final String KEY_LOCATION = "location";
 	public static final String KEY_LATITUDE = "latitude";
 	public static final String KEY_LONGITUDE = "longitude";
 	public static final String KEY_ALTITUDE = "altitude";
-
 	public static final String KEY_DISTANCE = "distance";
 	public static final String KEY_DIRECTION = "direction";
+
+	public static final String KEY_CACHE_LOCATION = "cacheLocation";
 	public static final String KEY_CACHE_LATITUDE = "cacheLatitude";
 	public static final String KEY_CACHE_LONGITUDE = "cacheLongitude";
 
