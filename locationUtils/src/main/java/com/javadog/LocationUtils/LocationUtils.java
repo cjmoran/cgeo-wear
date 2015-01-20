@@ -22,6 +22,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
+import android.util.Log;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -33,30 +34,38 @@ import com.google.android.gms.location.LocationServices;
  */
 public class LocationUtils implements SensorEventListener {
 
-	private static final long COMPASS_UPDATE_INTERVAL = 2000;
-	private static final long LOCATION_UPDATE_INTERVAL = 2000;
+	private static final long COMPASS_UPDATE_INTERVAL = 750;
+	private static final long LOCATION_UPDATE_INTERVAL = 1500;
 	private static final long LOCATION_UPDATE_MAX_INTERVAL = 1000;
 
 	private Location currentLocation;
 	private Location geocacheLocation;
 
 	private SensorManager sensorManager;
-	private Sensor accelerometer;
 	private Sensor magnetometer;
-	private LocationRequest locationRequest;
+	private Sensor accelerometer;
 
+	private OnDistanceUpdateListener onDistanceUpdateListener;
+	private OnDirectionUpdateListener onDirectionUpdateListener;
 	private OnLocationUpdateListener onLocationUpdateListener;
 
-	public LocationUtils(Context applicationContext, final Location cacheLocation) {
+	/**
+	 * @param distanceListener   Implementation of
+	 *                           {@link com.javadog.LocationUtils.LocationUtils.OnDistanceUpdateListener}
+	 * @param directionListener  Implementation of
+	 *                           {@link com.javadog.LocationUtils.LocationUtils.OnDirectionUpdateListener}
+	 */
+	public LocationUtils(Location cacheLocation,
+						 OnDistanceUpdateListener distanceListener, OnDirectionUpdateListener directionListener,
+						 OnLocationUpdateListener locationListener) {
+
 		geocacheLocation = cacheLocation;
+		setOnDistanceUpdateListener(distanceListener);
+		setOnDirectionUpdateListener(directionListener);
+		setOnLocationUpdateListener(locationListener);
+	}
 
-		//Specify how quickly we want to receive location updates
-		locationRequest = LocationRequest.create()
-				.setInterval(LOCATION_UPDATE_INTERVAL)
-				.setFastestInterval(LOCATION_UPDATE_MAX_INTERVAL)
-				.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-		//Listen for updates from the phone compass
+	public void startDirectionalTracking(Context applicationContext) {
 		sensorManager = (SensorManager) applicationContext.getSystemService(Context.SENSOR_SERVICE);
 		accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 		magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
@@ -64,11 +73,24 @@ public class LocationUtils implements SensorEventListener {
 		sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
 	}
 
+	public void startLocationTracking(GoogleApiClient apiClient) {
+		//Specify how quickly we want to receive location updates
+		LocationRequest locationRequest = LocationRequest.create()
+				.setInterval(LOCATION_UPDATE_INTERVAL)
+				.setFastestInterval(LOCATION_UPDATE_MAX_INTERVAL)
+				.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+		LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, locationListener);
+	}
+
 	private float[] gravity;
 	private float[] geomagnetic;
 	private float oldDirection = 0, oldLatitude = 0, oldLongitude = 0, oldAltitude = 0;
 	private long prevTime = System.currentTimeMillis();
 
+	/**
+	 * Handles compass rotation.
+	 */
 	@Override
 	public final void onSensorChanged(SensorEvent event) {
 		if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
@@ -83,17 +105,16 @@ public class LocationUtils implements SensorEventListener {
 
 			boolean success = SensorManager.getRotationMatrix(R, I, gravity, geomagnetic);
 			if(success) {
-				float[] orientation = new float[3];
+				final float[] orientation = new float[3];
 				SensorManager.getOrientation(R, orientation);
 				float azimuth = (float) Math.toDegrees(orientation[0]);
-				float pitch = (float) Math.toDegrees(orientation[1]);
 
 				if(currentLocation != null) {
-					float smoothedLatitude = smoothSensorValues(
+					final float smoothedLatitude = smoothSensorValues(
 							oldLatitude, (float) currentLocation.getLatitude(), 1 / 3f);
-					float smoothedLongitude = smoothSensorValues(
+					final float smoothedLongitude = smoothSensorValues(
 							oldLongitude, (float) currentLocation.getLongitude(), 1 / 3f);
-					float smoothedAltitude = smoothSensorValues(
+					final float smoothedAltitude = smoothSensorValues(
 							oldAltitude, (float) currentLocation.getAltitude(), 1 / 3f);
 
 					GeomagneticField geomagneticField = new GeomagneticField(
@@ -104,14 +125,11 @@ public class LocationUtils implements SensorEventListener {
 					);
 					azimuth += geomagneticField.getDeclination();
 
-					float bearing = currentLocation.bearingTo(geocacheLocation);
+					final float bearing = currentLocation.bearingTo(geocacheLocation);
 
-					float direction = smoothSensorValues(oldDirection, -(azimuth - bearing), 1 / 5f);
+					final float newDirectionRaw = 360 - ((azimuth > bearing) ? (azimuth-bearing) : (bearing-azimuth));
 
-					//If the user puts the phone in his/her pocket upside-down, invert the compass
-					if(pitch > 0) {
-						direction += 180f;
-					}
+					final float direction = smoothSensorValues(oldDirection, newDirectionRaw, 1 / 5f);
 
 					//Set old values to current values (for smoothing)
 					oldDirection = direction;
@@ -120,9 +138,9 @@ public class LocationUtils implements SensorEventListener {
 					oldAltitude = smoothedAltitude;
 
 					//Send direction update to Android Wear if update interval has passed
-					long currentTime = System.currentTimeMillis();
+					final long currentTime = System.currentTimeMillis();
 					if((currentTime - prevTime) > COMPASS_UPDATE_INTERVAL) {
-						onLocationUpdateListener.onDirectionUpdate(direction);
+						onDirectionUpdateListener.onDirectionUpdate(direction);
 						prevTime = currentTime;
 					}
 				}
@@ -135,11 +153,16 @@ public class LocationUtils implements SensorEventListener {
 	}
 
 	/**
-	 * Interface for instantiating class to receive distance and direction updates.
+	 * Interfaces for instantiating class to receive particular updates.
 	 */
-	public interface OnLocationUpdateListener {
+	public interface OnDistanceUpdateListener {
 		public void onDistanceUpdate(float newDistance);
+	}
+	public interface OnDirectionUpdateListener {
 		public void onDirectionUpdate(float newDirection);
+	}
+	public interface OnLocationUpdateListener {
+		public void onLocationUpdate(Location newLocation);
 	}
 
 	private LocationListener locationListener = new LocationListener() {
@@ -151,31 +174,43 @@ public class LocationUtils implements SensorEventListener {
 			//Calculate new distance (meters) to geocache
 			float distance = currentLocation.distanceTo(geocacheLocation);
 
-			//Pass new distance to listener
-			onLocationUpdateListener.onDistanceUpdate(distance);
+			//Pass new info to anyone who's listening...
+			onDistanceUpdateListener.onDistanceUpdate(distance);
+			if(onLocationUpdateListener != null) {
+				onLocationUpdateListener.onLocationUpdate(location);
+			}
 		}
 	};
 
 	/**
-	 * @param onLocationUpdateListener Client's implementation of
+	 * @param onDistanceUpdateListener References to client's implementations of stub methods
 	 */
+	public void setOnDistanceUpdateListener(OnDistanceUpdateListener onDistanceUpdateListener) {
+		this.onDistanceUpdateListener = onDistanceUpdateListener;
+	}
+	public void setOnDirectionUpdateListener(OnDirectionUpdateListener onDirectionUpdateListener) {
+		this.onDirectionUpdateListener = onDirectionUpdateListener;
+	}
 	public void setOnLocationUpdateListener(OnLocationUpdateListener onLocationUpdateListener) {
 		this.onLocationUpdateListener = onLocationUpdateListener;
-	}
-
-	/**
-	 * Tells the LocationUtils object to start requesting updates from LocationServices.
-	 */
-	public final void startListeningForUpdates(GoogleApiClient apiClient) {
-		LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, locationListener);
 	}
 
 	/**
 	 * Tells the LocationUtils object to unregister its receivers for sensor updates.
 	 */
 	public final void stopListeningForUpdates() {
-		sensorManager.unregisterListener(this, accelerometer);
-		sensorManager.unregisterListener(this, magnetometer);
+		if(sensorManager != null) {
+			if(accelerometer != null) {
+				sensorManager.unregisterListener(this, accelerometer);
+			}
+			if(magnetometer != null) {
+				sensorManager.unregisterListener(this, magnetometer);
+			}
+		}
+	}
+
+	public void setCurrentLocation(Location currentLocation) {
+		this.currentLocation = currentLocation;
 	}
 
 	/**
@@ -186,7 +221,7 @@ public class LocationUtils implements SensorEventListener {
 	 * @param decayFactor Decay factor. (1 / decayFactor) = number of samples to smooth over.
 	 * @return The smoothed value.
 	 */
-	private final float smoothSensorValues(float oldVal, float newVal, float decayFactor) {
+	private float smoothSensorValues(float oldVal, float newVal, float decayFactor) {
 		return oldVal * (1 - decayFactor) + newVal * decayFactor;
 	}
 }

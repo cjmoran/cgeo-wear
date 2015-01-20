@@ -15,6 +15,7 @@
 
 package com.javadog.cgeowear;
 
+import android.location.Location;
 import android.util.Log;
 
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -32,6 +33,7 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 	public static final String PATH_INIT = "/cgeoWear/init";
 	public static final String PATH_UPDATE_DISTANCE = "/cgeoWear/update/distance";
 	public static final String PATH_UPDATE_DIRECTION = "/cgeoWear/update/direction";
+	public static final String PATH_UPDATE_LOCATION = "/cgeoWear/update/location";
 	public static final String PATH_KILL_APP = "/cgeoWear/killApp";
 
 	private GoogleApiClient apiClient;
@@ -54,13 +56,23 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 	 * @param distance  The distance to the geocache.
 	 * @param direction The direction to the geocache.
 	 */
-	public void initTracking(String cacheName, String geocode, float distance, float direction)
-			throws ConnectException {
+	/**
+	 * Send initial command to start navigating to a cache using passed values:
+	 *
+	 * @param cacheName The Geocache's title.
+	 * @param geocode   The Geocache's Geocode.
+	 * @param distance  The distance to the geocache.
+	 * @param direction The direction to the geocache.
+	 */
+	public void initTracking(String cacheName, String geocode, float distance, float direction, boolean watchCompass,
+							 Location cacheLocation) throws ConnectException {
 		MessageDataset dataSet = new MessageDataset.Builder()
 				.cacheName(cacheName)
 				.geocode(geocode)
 				.distance(distance)
 				.direction(direction)
+				.cacheLocation(cacheLocation)
+				.useWatchCompass(watchCompass)
 				.build();
 
 		MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
@@ -88,6 +100,15 @@ public class WearInterface implements ResultCallback<MessageApi.SendMessageResul
 
 		Wearable.MessageApi.sendMessage(
 				apiClient, nodeId, PATH_UPDATE_DIRECTION, dataSet.putToDataMap().toByteArray()).setResultCallback(this);
+	}
+
+	public void sendLocationUpdate(Location location) {
+		MessageDataset dataSet = new MessageDataset.Builder()
+				.location(location)
+				.build();
+
+		Wearable.MessageApi.sendMessage(
+				apiClient, nodeId, PATH_UPDATE_LOCATION, dataSet.putToDataMap().toByteArray()).setResultCallback(this);
 	}
 
 	public void sendKillRequest() {

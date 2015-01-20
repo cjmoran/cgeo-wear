@@ -7,4 +7,7 @@
 	<string name="link_usage_guide">Usage Guide</string>
 	<string name="link_usage_guide_summary">Instructions for using this app</string>
 
+	<string name="watch_compass_pref">Use watch compass</string>
+	<string name="watch_compass_pref_enabled">Using watch compass</string>
+	<string name="watch_compass_pref_disabled">Using this device\'s compass</string>
 </resources>

@@ -22,12 +22,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.IBinder;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -40,6 +42,7 @@ import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 import com.javadog.LocationUtils.LocationUtils;
+import com.javadog.WearMessageDataset.MessageDataset;
 
 import java.net.ConnectException;
 import java.util.HashSet;
@@ -57,7 +60,7 @@ public class MobileService extends Service
 	private static final String MESSAGE_ERROR_COMMUNICATING = "Error communicating with Wear device. Contact support.";
 
 	/**
-	 * Constants from c:geo's Android Wear API that I wrote.
+	 * Constants from c:geo's Android Wear API.
 	 */
 	private static final String PREFIX = "cgeo.geocaching.intent.extra.";
 	private static final String EXTRA_CACHE_NAME = PREFIX + "name";
@@ -71,6 +74,8 @@ public class MobileService extends Service
 
 	private String cacheName;
 	private String geocode;
+	private boolean useWatchCompass;
+	private Location geocacheLocation;
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
@@ -82,9 +87,13 @@ public class MobileService extends Service
 
 				final double latitude = intent.getDoubleExtra(EXTRA_LATITUDE, 0d);
 				final double longitude = intent.getDoubleExtra(EXTRA_LONGITUDE, 0d);
-				final Location geocacheLocation = new Location("c:geo");
+
+				geocacheLocation = new Location("c:geo");
 				geocacheLocation.setLatitude(latitude);
 				geocacheLocation.setLongitude(longitude);
+
+				SharedPreferences userPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+				useWatchCompass = userPrefs.getBoolean(MessageDataset.KEY_WATCH_COMPASS, true);
 				setupLocationUtils(geocacheLocation);
 
 				connectGoogleApiClient();
@@ -98,19 +107,38 @@ public class MobileService extends Service
 			locationUtils.stopListeningForUpdates();
 		}
 
-		locationUtils = new LocationUtils(getApplicationContext(), geocacheLocation);
+		locationUtils = new LocationUtils(
+				geocacheLocation,
 
-		locationUtils.setOnLocationUpdateListener(new LocationUtils.OnLocationUpdateListener() {
-			@Override
-			public void onDistanceUpdate(float newDistance) {
-				wearInterface.sendDistanceUpdate(newDistance);
-			}
+				new LocationUtils.OnDistanceUpdateListener() {
+					@Override
+					public void onDistanceUpdate(float newDistance) {
+						if(wearInterface != null) {
+							wearInterface.sendDistanceUpdate(newDistance);
+						}
+					}
+				},
 
-			@Override
-			public void onDirectionUpdate(float newDirection) {
-				wearInterface.sendDirectionUpdate(newDirection);
-			}
-		});
+				// Don't set up listener for direction updates here if user wants to use watch compass;
+				// that will be calculated watch-side.
+				(useWatchCompass ?
+						null :
+						new LocationUtils.OnDirectionUpdateListener() {
+							@Override
+							public void onDirectionUpdate(float newDirection) {
+								wearInterface.sendDirectionUpdate(newDirection);
+							}
+						}),
+
+				// Only need this when using watch compass mode
+				(useWatchCompass ?
+						new LocationUtils.OnLocationUpdateListener() {
+							@Override
+							public void onLocationUpdate(Location newLocation) {
+								wearInterface.sendLocationUpdate(newLocation);
+							}
+						} :
+						null));
 	}
 
 	private void connectGoogleApiClient() {
@@ -130,7 +158,7 @@ public class MobileService extends Service
 	public void onCreate() {
 		super.onCreate();
 
-		//Register listener for INTENT_STOP events
+		//Register listener for INTENT_STOP events (from persistent notification)
 		IntentFilter filter = new IntentFilter(INTENT_STOP);
 		registerReceiver(intentReceiver, filter);
 
@@ -222,7 +250,11 @@ public class MobileService extends Service
 	public void onConnected(Bundle bundle) {
 		Log.d(DEBUG_TAG, "Connected to Play Services");
 
-		locationUtils.startListeningForUpdates(apiClient);
+		// Start tracking all requested info on the phone side
+		locationUtils.startLocationTracking(apiClient);
+		if(!useWatchCompass) {
+			locationUtils.startDirectionalTracking(getApplicationContext());
+		}
 
 		//Get ID of connected Wear device and send it the initial cache info (in another thread)
 		new Thread(new Runnable() {
@@ -237,7 +269,7 @@ public class MobileService extends Service
 				Message m = new Message();
 				try {
 					wearInterface = new WearInterface(apiClient, connectedWearDevices.iterator().next());
-					wearInterface.initTracking(cacheName, geocode, 0f, 0f);
+					wearInterface.initTracking(cacheName, geocode, 0f, 0f, useWatchCompass, geocacheLocation);
 					m.obj = MESSAGE_NAVIGATING_NOW;
 
 				} catch(ConnectException e) {

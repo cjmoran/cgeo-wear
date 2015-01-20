@@ -15,6 +15,8 @@
  
 package com.javadog.WearMessageDataset;
 
+import android.location.Location;
+
 import com.google.android.gms.wearable.DataMap;
 
 /**
@@ -23,20 +25,45 @@ import com.google.android.gms.wearable.DataMap;
 public class MessageDataset {
 	public static final String KEY_CACHE_NAME = "cacheName";
 	public static final String KEY_GEOCODE = "geocode";
+	public static final String KEY_WATCH_COMPASS = "useWatchCompass";
+
+	public static final String KEY_LOCATION = "location";
+	public static final String KEY_LATITUDE = "latitude";
+	public static final String KEY_LONGITUDE = "longitude";
+	public static final String KEY_ALTITUDE = "altitude";
 	public static final String KEY_DISTANCE = "distance";
 	public static final String KEY_DIRECTION = "direction";
 
+	public static final String KEY_CACHE_LOCATION = "cacheLocation";
+	public static final String KEY_CACHE_LATITUDE = "cacheLatitude";
+	public static final String KEY_CACHE_LONGITUDE = "cacheLongitude";
+
 	private final String cacheName, geocode;
 	private final float distance, direction;
+	private Location location;
+	private Location cacheLocation;
+	private boolean useWatchCompass;
 
 	/**
-	 * Do not call directly, use MessageDataSet.Builder to obtain a new instance.
+	 * Do not call constructors directly, use MessageDataSet.Builder to obtain a new instance.
 	 */
-	private MessageDataset(String name, String code, float dist, float dir) {
+	private MessageDataset(String name, String code, float dist, float dir, boolean watchCompass) {
 		cacheName = name;
 		geocode = code;
 		distance = dist;
 		direction = dir;
+		useWatchCompass = watchCompass;
+	}
+
+	private MessageDataset(String name, String code, float dist, float dir, boolean watchCompass, Location loc,
+						   Location cacheLoc) {
+		cacheName = name;
+		geocode = code;
+		distance = dist;
+		direction = dir;
+		useWatchCompass = watchCompass;
+		location = loc;
+		cacheLocation = cacheLoc;
 	}
 
 	public DataMap putToDataMap() {
@@ -46,6 +73,12 @@ public class MessageDataset {
 		map.putString(KEY_GEOCODE, geocode);
 		map.putFloat(KEY_DISTANCE, distance);
 		map.putFloat(KEY_DIRECTION, direction);
+		map.putBoolean(KEY_WATCH_COMPASS, useWatchCompass);
+		map.putDouble(KEY_LATITUDE, (location != null) ? location.getLatitude() : 0d);
+		map.putDouble(KEY_LONGITUDE, (location != null) ? location.getLongitude() : 0d);
+		map.putDouble(KEY_ALTITUDE, (location != null) ? location.getAltitude() : 0d);
+		map.putDouble(KEY_CACHE_LATITUDE, (cacheLocation != null) ? cacheLocation.getLatitude() : 0d);
+		map.putDouble(KEY_CACHE_LONGITUDE, (cacheLocation != null) ? cacheLocation.getLongitude() : 0d);
 
 		return map;
 	}
@@ -60,8 +93,20 @@ public class MessageDataset {
 				map.getString(KEY_CACHE_NAME),
 				map.getString(KEY_GEOCODE),
 				map.getFloat(KEY_DISTANCE),
-				map.getFloat(KEY_DIRECTION)
+				map.getFloat(KEY_DIRECTION),
+				map.getBoolean(KEY_WATCH_COMPASS)
 		);
+
+		Location loc = new Location("phoneApp");
+		loc.setLatitude(map.getDouble(KEY_LATITUDE, 0d));
+		loc.setLongitude(map.getDouble(KEY_LONGITUDE, 0d));
+		loc.setAltitude(map.getDouble(KEY_ALTITUDE, 0d));
+		setLocation(loc);
+
+		Location cacheLoc = new Location("phoneApp");
+		cacheLoc.setLatitude(map.getDouble(KEY_CACHE_LATITUDE, 0d));
+		cacheLoc.setLongitude(map.getDouble(KEY_CACHE_LONGITUDE, 0d));
+		setCacheLocation(cacheLoc);
 	}
 
 	public String getCacheName() {
@@ -80,9 +125,31 @@ public class MessageDataset {
 		return direction;
 	}
 
+	public boolean getWatchCompassPref() {
+		return useWatchCompass;
+	}
+
+	public Location getLocation() {
+		return location;
+	}
+
+	public Location getCacheLocation() {
+		return cacheLocation;
+	}
+
+	private void setLocation(Location loc) {
+		location = loc;
+	}
+
+	private void setCacheLocation(Location loc) {
+		cacheLocation = loc;
+	}
+
 	public static class Builder {
 		private String nestedCacheName, nestedGeocode;
 		private float nestedDistance, nestedDirection;
+		private boolean nestedUseWatchCompass;
+		private Location nestedLocation, nestedCacheLocation;
 
 		public Builder cacheName(String name) {
 			nestedCacheName = name;
@@ -104,8 +171,25 @@ public class MessageDataset {
 			return this;
 		}
 
+		public Builder useWatchCompass(boolean w) {
+			nestedUseWatchCompass = w;
+			return this;
+		}
+
+		public Builder location(Location l) {
+			nestedLocation = l;
+			return this;
+		}
+
+		public Builder cacheLocation(Location l) {
+			nestedCacheLocation = l;
+			return this;
+		}
+
 		public MessageDataset build() {
-			return new MessageDataset(nestedCacheName, nestedGeocode, nestedDistance, nestedDirection);
+			return new MessageDataset(
+					nestedCacheName, nestedGeocode, nestedDistance, nestedDirection, nestedUseWatchCompass,
+					nestedLocation, nestedCacheLocation);
 		}
 	}
 }
