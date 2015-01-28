@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">c:geo Wear</string>
+    <string name="description_compass">Kompass</string>
+    <string name="app_direct_launch_warning">Diese App muss nicht manuell gestartet werden!\n\n
+                Nutze einfach \'Navigation -> Android Wear\' aus einem Cache-Listing in c:geo.</string>
+
+        <!-- Ongoing Notification Text -->
+        <string name="notification1_body">Navigation - Wische nach links für Optionen</string>
+        <string name="notification2_label">Zeige Kompass</string>
+        <string name="notification3_label">Navigation stoppen</string>
+
+</resources>
