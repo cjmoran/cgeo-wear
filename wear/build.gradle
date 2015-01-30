@@ -8,8 +8,8 @@ android {
         applicationId "com.javadog.cgeowear"
         minSdkVersion 20
         targetSdkVersion 21
-        versionCode 5
-        versionName "2.1.0"
+        versionCode 6
+        versionName "2.1.1"
     }
     buildTypes {
         release {
