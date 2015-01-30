@@ -46,6 +46,7 @@ public class CompassActivity extends Activity {
 	private cgeoWearService service;
 	private boolean serviceBound = false;
 
+	private AlertDialog launchDialog;
 	private TextView tv_cacheName;
 	private TextView tv_geocode;
 	private TextView tv_distance;
@@ -86,7 +87,7 @@ public class CompassActivity extends Activity {
 	private boolean verifyLaunchAction(final String launchAction) {
 		final boolean launchedCorrectly = ListenerService.PATH_INIT.equals(launchAction);
 		if(!launchedCorrectly) {
-			new AlertDialog.Builder(this)
+			launchDialog = new AlertDialog.Builder(this)
 					.setMessage(getString(R.string.app_direct_launch_warning))
 					.setOnDismissListener(new DialogInterface.OnDismissListener() {
 						@Override
@@ -194,7 +195,8 @@ public class CompassActivity extends Activity {
 		}
 		newRot += (newDirectionRaw - apparent);
 
-		if(currentRotation != newDirectionRaw) {
+		//Play animation
+		if(currentRotation != newRot) {
 			RotateAnimation anim = new RotateAnimation(
 					currentRotation,
 					newRot,
@@ -218,6 +220,10 @@ public class CompassActivity extends Activity {
 	@Override
 	protected void onStop() {
 		super.onStop();
+
+		if(launchDialog != null) {
+			launchDialog.dismiss();
+		}
 
 		unbindFromService();
 		stopListeningForUpdates();

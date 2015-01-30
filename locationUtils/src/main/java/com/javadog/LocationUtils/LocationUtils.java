@@ -127,7 +127,7 @@ public class LocationUtils implements SensorEventListener {
 
 					final float bearing = currentLocation.bearingTo(geocacheLocation);
 
-					final float newDirectionRaw = 360 - ((azimuth > bearing) ? (azimuth-bearing) : (bearing-azimuth));
+					final float newDirectionRaw = (360 - (azimuth-bearing)) % 360;
 
 					final float direction = smoothSensorValues(oldDirection, newDirectionRaw, 1 / 5f);
 
