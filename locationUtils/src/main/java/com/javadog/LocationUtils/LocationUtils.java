@@ -106,7 +106,7 @@ public class LocationUtils implements SensorEventListener {
 			if(success) {
 				final float[] orientation = new float[3];
 				SensorManager.getOrientation(R, orientation);
-				float azimuth = (float) Math.toDegrees(orientation[0]);
+				float azimuth = (float) (Math.toDegrees(orientation[0]) + 360) % 360;
 
 				if(currentLocation != null) {
 					final float smoothedLatitude = smoothSensorValues(
@@ -122,16 +122,16 @@ public class LocationUtils implements SensorEventListener {
 							smoothedAltitude,
 							System.currentTimeMillis()
 					);
-					azimuth += geomagneticField.getDeclination();
+					azimuth -= geomagneticField.getDeclination();
 
 					final float bearing = currentLocation.bearingTo(geocacheLocation);
 
 					final float newDirectionRaw = (360 - (azimuth-bearing)) % 360;
 
-					final float direction = smoothSensorValues(oldDirection, newDirectionRaw, 1 / 5f);
+					final float newDirection = smoothSensorValues(oldDirection, newDirectionRaw, 1 / 5f);
 
 					//Set old values to current values (for smoothing)
-					oldDirection = direction;
+					oldDirection = newDirection;
 					oldLatitude = smoothedLatitude;
 					oldLongitude = smoothedLongitude;
 					oldAltitude = smoothedAltitude;
@@ -139,7 +139,7 @@ public class LocationUtils implements SensorEventListener {
 					//Send direction update to Android Wear if update interval has passed
 					final long currentTime = System.currentTimeMillis();
 					if((currentTime - prevTime) > COMPASS_UPDATE_INTERVAL) {
-						onDirectionUpdateListener.onDirectionUpdate(direction);
+						onDirectionUpdateListener.onDirectionUpdate(newDirection);
 						prevTime = currentTime;
 					}
 				}
