@@ -126,7 +126,9 @@ public class MobileService extends Service
 						new LocationUtils.OnDirectionUpdateListener() {
 							@Override
 							public void onDirectionUpdate(float newDirection) {
-								wearInterface.sendDirectionUpdate(newDirection);
+								if(wearInterface != null) {
+									wearInterface.sendDirectionUpdate(newDirection);
+								}
 							}
 						}),
 
@@ -135,7 +137,9 @@ public class MobileService extends Service
 						new LocationUtils.OnLocationUpdateListener() {
 							@Override
 							public void onLocationUpdate(Location newLocation) {
-								wearInterface.sendLocationUpdate(newLocation);
+								if(wearInterface != null) {
+									wearInterface.sendLocationUpdate(newLocation);
+								}
 							}
 						} :
 						null));

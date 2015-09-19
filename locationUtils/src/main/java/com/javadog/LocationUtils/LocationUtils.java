@@ -155,13 +155,13 @@ public class LocationUtils implements SensorEventListener {
 	 * Interfaces for instantiating class to receive particular updates.
 	 */
 	public interface OnDistanceUpdateListener {
-		public void onDistanceUpdate(float newDistance);
+		void onDistanceUpdate(float newDistance);
 	}
 	public interface OnDirectionUpdateListener {
-		public void onDirectionUpdate(float newDirection);
+		void onDirectionUpdate(float newDirection);
 	}
 	public interface OnLocationUpdateListener {
-		public void onLocationUpdate(Location newLocation);
+		void onLocationUpdate(Location newLocation);
 	}
 
 	private LocationListener locationListener = new LocationListener() {

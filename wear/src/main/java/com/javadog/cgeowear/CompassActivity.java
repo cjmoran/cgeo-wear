@@ -169,7 +169,7 @@ public class CompassActivity extends Activity {
 	 * @param dist The distance to the geocache, in meters.
 	 */
 	private void setDistanceFormatted(final float dist) {
-		DecimalFormat format = new DecimalFormat("0.00m");
+		DecimalFormat format = new DecimalFormat("0.00'm'");
 		tv_distance.setText(format.format(dist));
 	}
 

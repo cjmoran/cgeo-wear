@@ -1,33 +1,42 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 21
-    buildToolsVersion '21.1.2'
-
+    signingConfigs {
+        Release {
+            storeFile file('E:/Development/cgeoWear/Keystores/keystore-release.jks')
+        }
+    }
+    compileSdkVersion 23
+    buildToolsVersion '22.0.1'
     defaultConfig {
         applicationId "com.javadog.cgeowear"
         minSdkVersion 18
-        targetSdkVersion 21
-        versionCode 6
-        versionName "2.1.1"
+        targetSdkVersion 23
+        versionCode 7
+        versionName "2.1.2"
     }
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+        dev {
+            debuggable true
+            jniDebuggable false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
     }
 }
 
 dependencies {
     compile 'com.android.support:appcompat-v7:+'
-    compile 'com.google.android.gms:play-services-wearable:6.5.+'
-
-    compile(project(':locationUtils'))
-
+    compile project(':locationUtils')
     compile(project(':wearmessagedataset')) {
         exclude group: 'com.google.android.gms', module: 'play-services-wearable'
     }
-
     wearApp project(':wear')
+    compile 'com.google.android.gms:play-services-wearable:7.8.+'
 }
