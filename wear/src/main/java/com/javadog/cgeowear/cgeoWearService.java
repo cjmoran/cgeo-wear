@@ -155,10 +155,7 @@ public class cgeoWearService extends Service
 		useWatchCompass = startIntent.getBooleanExtra(MessageDataset.KEY_WATCH_COMPASS, true);
 
 		if(useWatchCompass) {
-			Location cacheLoc = new Location("phoneApp");
-			cacheLoc.setLatitude(startIntent.getFloatExtra(MessageDataset.KEY_CACHE_LATITUDE, 0f));
-			cacheLoc.setLongitude(startIntent.getFloatExtra(MessageDataset.KEY_CACHE_LONGITUDE, 0f));
-			cacheLocation = cacheLoc;
+			cacheLocation = startIntent.getExtras().getParcelable(MessageDataset.KEY_CACHE_LOCATION);
 		}
 	}
 
